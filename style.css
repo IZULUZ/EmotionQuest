@@ -1,79 +1,40 @@
-@font-face {
-    font-family: 'DungGeunMo';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+/* 기본 폰트 및 배경 생략 (이전과 동일) */
+
+.main-ui { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; height: 100%; overflow: hidden; }
+
+/* 왼쪽: 이모지 키친 존 */
+.kitchen-panel { background: #fdf2f2; border: 3px solid var(--gold); padding: 15px; overflow-y: auto; border-radius: 15px; }
+.emoji-category { margin-bottom: 20px; }
+.category-title { font-size: 14px; color: #888; margin-bottom: 8px; border-left: 4px solid var(--gold); padding-left: 8px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.emoji-item { 
+    background: white; border: 1px solid #ddd; font-size: 24px; padding: 10px; 
+    cursor: pointer; text-align: center; border-radius: 8px; transition: 0.2s;
+}
+.emoji-item:hover { transform: translateY(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+/* 키친 공식 영역 */
+.mix-formula { 
+    background: #222; color: #ffd700; padding: 20px; border-radius: 15px; 
+    font-size: 32px; display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0;
 }
 
-:root {
-    --gold: #d4af37;
-    --win-bg: #fffafa;
-    --text: #5d4037;
-    --accent: #ffb6c1;
+/* 태그 선택기 */
+.tag-selector { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.tag-btn { 
+    background: #fff; border: 1px solid var(--gold); padding: 5px 10px; 
+    border-radius: 20px; font-size: 12px; cursor: pointer; 
 }
+.tag-btn.active { background: var(--gold); color: white; }
 
-body {
-    background: #a6c1ee url('https://www.transparenttextures.com/patterns/notebook.png');
-    font-family: 'DungGeunMo', sans-serif;
-    color: var(--text);
-    margin: 0; padding: 0;
-    display: flex; justify-content: center; align-items: center;
-    width: 100vw; height: 100vh; overflow: hidden;
+/* 오른쪽: 실시간 감정 카드 */
+.card-panel { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.emotion-card { 
+    width: 320px; background: white; border: 2px solid #ddd; border-radius: 15px; 
+    overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
 }
-
-/* 전체 화면 확장 */
-.game-window {
-    width: 95%; height: 90%; 
-    background: var(--win-bg); border: 8px double var(--gold);
-    box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
-    display: flex; flex-direction: column; position: relative;
-}
-
-.window-header {
-    background: var(--gold); color: white; padding: 12px 20px;
-    display: flex; justify-content: space-between; font-size: 20px;
-}
-
-.main-ui { display: flex; flex: 1; padding: 20px; gap: 30px; overflow-y: auto; }
-
-/* 왼쪽 패널: 캐릭터 */
-.left-panel { width: 350px; text-align: center; border-right: 3px solid #eee; padding-right: 20px; }
-.char-frame {
-    border: 5px solid var(--gold); height: 350px; background: white;
-    margin-bottom: 20px; display: flex; justify-content: center; align-items: center;
-    position: relative; overflow: hidden;
-}
-.char-img { width: 250px; transition: all 0.3s ease; }
-
-/* 중앙/오른쪽 패널 */
-.right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
-
-/* 이모지 키친 존 */
-.kitchen-box {
-    background: #222; border: 3px solid var(--gold); padding: 20px;
-    color: #ffd700; border-radius: 15px; text-align: center; font-size: 24px;
-}
-
-/* 버튼 및 입력창 */
-.pixel-btn {
-    background: #f8f9fa; border: 4px outset #fff; padding: 12px;
-    cursor: pointer; font-family: 'DungGeunMo'; font-size: 16px;
-}
-.pixel-btn:hover { background: var(--accent); }
-.pixel-btn.selected { background: var(--gold); color: white; border-style: inset; }
-
-.quest-item {
-    background: white; border: 2px solid #ddd; padding: 10px;
-    margin: 5px 0; cursor: pointer; border-radius: 5px; transition: 0.2s;
-}
-.quest-item:hover { border-color: var(--gold); background: #fff9e6; }
-.quest-item.active { border-color: var(--gold); background: #fff0f5; font-weight: bold; }
-
-/* 교사용 레이어 팝업 */
-.modal-overlay {
-    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;
-}
-.custom-popup {
-    background: white; border: 6px double var(--gold); width: 500px;
-    padding: 30px; position: relative; animation: popOpen 0.3s ease;
-}
-@keyframes popOpen { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.card-header { padding: 10px; font-weight: bold; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+.card-image { width: 100%; height: 250px; background: #fafafa; display: flex; justify-content: center; align-items: center; font-size: 100px; }
+.card-content { padding: 15px; }
+.card-tags { color: #3897f0; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+.card-diary { font-size: 14px; line-height: 1.4; color: #333; }
