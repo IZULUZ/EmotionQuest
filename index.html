@@ -5,53 +5,70 @@
     <title>6-5 감정 연금술소</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        :root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; }
-        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #333; }
-        .window { width: 900px; height: 680px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; }
-        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 15px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; }
-        .modal-content { background:var(--pm-bg); border:8px ridge var(--pm-dark); width:650px; padding:30px; text-align:center; }
-        .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; height:150px; overflow-y:auto; background:white; padding:10px; border:4px inset #333; margin:15px 0; }
-        .emoji-item { font-size:32px; cursor:pointer; }
-        .mix-area { display:flex; align-items:center; justify-content:center; gap:15px; font-size:35px; margin:15px 0; background:#fff; padding:10px; border-radius:10px; }
-        .mix-result { width:80px; height:80px; border:2px dashed var(--pm-gold); display:flex; align-items:center; justify-content:center; }
-        .q-card { background:white; border:3px solid var(--pm-dark); padding:15px; width:30%; cursor:pointer; font-size:14px; }
-        .q-card.selected { background:var(--pm-gold); border-color:white; }
-        .tag { display:inline-block; border:1px solid #333; padding:4px 8px; margin:2px; cursor:pointer; font-size:13px; }
-        .tag.on { background:var(--pm-dark); color:white; }
+        :root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; --pm-inner: #fff9eb; }
+        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        .window { width: 1000px; height: 750px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
+        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
+        
+        /* 단계별 섹션 제어 */
+        .step { display: none; flex: 1; padding: 30px; flex-direction: column; align-items: center; }
+        .step.active { display: flex; }
+
+        /* UI 컴포넌트 */
+        .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; height: 180px; overflow-y: auto; background: white; padding: 15px; border: 4px inset #333; width: 80%; }
+        .emoji-item { font-size: 35px; cursor: pointer; transition: 0.1s; }
+        .emoji-item:hover { transform: scale(1.2); }
+        
+        .mix-container { display: flex; align-items: center; gap: 20px; margin: 20px 0; background: #fff; padding: 15px; border-radius: 10px; border: 3px solid var(--pm-dark); }
+        .mix-slot { width: 100px; height: 100px; border: 2px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 50px; }
+        
+        .tag-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 15px 0; }
+        .tag { background: #eee; border: 2px solid #333; padding: 8px 15px; cursor: pointer; }
+        .tag.on { background: var(--pm-dark); color: white; }
+
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 5px outset var(--pm-gold); padding: 15px 30px; cursor: pointer; font-family: inherit; font-size: 20px; }
+        .pm-btn:active { border-style: inset; }
+
+        canvas { background: white; border: 3px solid var(--pm-dark); padding: 10px; }
+        .q-card { background: white; border: 3px solid var(--pm-dark); padding: 15px; width: 250px; cursor: pointer; text-align: center; }
+        .q-card.selected { background: var(--pm-gold); }
     </style>
 </head>
 <body>
 
 <div class="window">
-    <div class="header">🔮 6학년 5반 감정 연금술소</div>
-    <div style="display:flex; flex:1; justify-content:center; align-items:center;">
-        <button onclick="openStep1()" style="padding:20px 40px; font-size:24px; font-family:inherit; background:var(--pm-dark); color:var(--pm-gold); border:6px outset var(--pm-gold); cursor:pointer;">✨ 오늘의 감정 카드 만들기</button>
-    </div>
-</div>
+    <div class="header">📔 감정 연금술 페이지 (6-5)</div>
 
-<div id="modal1" class="modal">
-    <div class="modal-content">
-        <h3>1. 감정 재료 및 단어 선택</h3>
+    <div id="step1" class="step active">
+        <h2>1. 감정 재료를 섞으세요</h2>
         <div class="emoji-grid" id="grid"></div>
-        <div class="mix-area">
-            <span id="s1">❓</span> <span>+</span> <span id="s2">❓</span> <span>=</span>
-            <div class="mix-result" id="resImg">?</div>
+        <div class="mix-container">
+            <div class="mix-slot" id="s1">?</div>
+            <div style="font-size: 40px;">+</div>
+            <div class="mix-slot" id="s2">?</div>
+            <div style="font-size: 40px;">=</div>
+            <div class="mix-slot" id="resImg">?</div>
         </div>
-        <div id="tagList"></div>
-        <br><button id="nextBtn" disabled onclick="openStep2()" style="padding:10px 20px; font-family:inherit;">분석 결과 확인 & 퀘스트 선택</button>
+        <div class="tag-container" id="tagList"></div>
+        <input type="text" id="diary" placeholder="오늘의 일기를 한 줄로 기록하세요" style="width: 70%; padding: 12px; font-family: inherit; margin-bottom: 20px;">
+        <button class="pm-btn" onclick="goStep2()">감정 분석하기 ✨</button>
     </div>
-</div>
 
-<div id="modal2" class="modal">
-    <div class="modal-content">
-        <h3 id="analysisTitle">감정 분석 결과</h3>
-        <p id="adviceText" style="background:#fff; padding:10px; border:2px inset #ccc; font-size:15px;"></p>
-        <h4>연관 인성 퀘스트를 골라보세요</h4>
-        <div style="display:flex; gap:10px; justify-content:center;" id="questChoices"></div>
-        <br><button id="finBtn" disabled onclick="submit()" style="padding:15px 30px; font-family:inherit; background:var(--pm-dark); color:var(--pm-gold);">연금술 완료! 입장</button>
+    <div id="step2" class="step">
+        <h2>2. 당신의 감정 분석 & 퀘스트</h2>
+        <div style="display: flex; gap: 40px; width: 100%; justify-content: center; align-items: center;">
+            <div style="width: 350px; height: 350px;"><canvas id="emotionChart"></canvas></div>
+            <div style="flex: 1; text-align: left;">
+                <div id="adviceBox" style="background: white; border: 3px inset #333; padding: 15px; margin-bottom: 20px; font-size: 18px; color: #111;"></div>
+                <h3>맞춤 퀘스트 선택</h3>
+                <div id="questChoices" style="display: flex; gap: 10px;"></div>
+            </div>
+        </div>
+        <button class="pm-btn" id="finBtn" disabled onclick="submitAll()" style="margin-top: 30px;">최종 입장하기 🚪</button>
     </div>
 </div>
 
@@ -60,16 +77,15 @@
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
     const emojis = ["😊","😡","😢","🥰","🤔","🥳","😎","😴","🔥","🌈","🤢","😱","🤩","😭","🫠","🤯","🥺","🤤","👾","👻","💀","🤖","🎃","⭐","🌙","🍀","💎","🎨","🎮","⚽","🍎","🌈"];
-    const tagsArr = ["기쁨", "화남", "슬픔", "불안", "신남", "피곤", "평온"];
+    const tagsArr = ["기쁨", "설렘", "분노", "우울", "긴장", "평온", "피곤", "자신감"];
     let sel1=null, sel2=null, finalImg="", selectedTags=[], selectedQuest=null;
 
-    function openStep1(){ document.getElementById('modal1').style.display='flex'; }
-
+    // 1단계 세팅
     const g = document.getElementById('grid');
     emojis.forEach(e => {
         let d = document.createElement('div'); d.className='emoji-item'; d.innerText=e;
         d.onclick = () => {
-            if(!sel1 || (sel1 && sel2)) { sel1=e; sel2=null; document.getElementById('s1').innerText=e; document.getElementById('s2').innerText="❓"; }
+            if(!sel1 || (sel1 && sel2)) { sel1=e; sel2=null; document.getElementById('s1').innerText=e; document.getElementById('s2').innerText="?"; document.getElementById('resImg').innerHTML="?"; }
             else { sel2=e; document.getElementById('s2').innerText=e; updateMix(); }
         };
         g.appendChild(d);
@@ -81,7 +97,6 @@
         s.onclick = () => {
             if(s.classList.contains('on')){ s.classList.remove('on'); selectedTags = selectedTags.filter(i=>i!==t); }
             else if(selectedTags.length < 2){ s.classList.add('on'); selectedTags.push(t); }
-            document.getElementById('nextBtn').disabled = !(sel1 && sel2 && selectedTags.length > 0);
         };
         tL.appendChild(s);
     });
@@ -89,56 +104,52 @@
     function updateMix() {
         const u1 = sel1.codePointAt(0).toString(16); const u2 = sel2.codePointAt(0).toString(16);
         finalImg = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${u1}/u${u1}_u${u2}.png`;
-        document.getElementById('resImg').innerHTML = `<img src="${finalImg}" style="width:100%" onerror="this.src='https://openmoji.org/data/color/svg/2728.svg'">`;
+        document.getElementById('resImg').innerHTML = `<img src="${finalImg}" style="width:100%" onerror="this.innerHTML='✨'">`;
     }
 
-    async function openStep2() {
-        document.getElementById('modal1').style.display='none';
-        document.getElementById('modal2').style.display='flex';
+    // 2단계 분석 로직
+    function goStep2() {
+        if(!sel1 || !sel2 || selectedTags.length === 0) return alert("이모지와 태그를 모두 선택하세요!");
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
         
-        let advice = ""; let targetType = "";
-        if(selectedTags.includes("화남") || selectedTags.includes("불안")) {
-            advice = "마음의 온도가 높군요. 차분하게 숨을 고르고 '배려'의 행동을 하면 마음이 시원해질 거예요.";
-            targetType = "배려";
-        } else if(selectedTags.includes("평온") || selectedTags.includes("기쁨")) {
-            advice = "안정적인 기운이 느껴집니다. '존중'의 말 한마디로 주변을 밝게 비춰보는 건 어떨까요?";
-            targetType = "존중";
-        } else {
-            advice = "몽글몽글한 감정이 가득해요. '사랑'의 마음을 담아 작은 친절을 베풀어 보세요.";
-            targetType = "사랑";
-        }
-        document.getElementById('adviceText').innerText = advice;
+        // 육각형 차트 생성
+        const ctx = document.getElementById('emotionChart').getContext('2d');
+        const labels = ["배려", "존중", "성실", "용기", "절제", "사랑"];
+        const dataValues = labels.map(() => Math.floor(Math.random() * 50) + 50);
 
-        // DB에서 게시판 퀘스트 가져와서 타입에 맞는 것 추천
-        const snap = await db.ref('board/quests').once('value');
-        const container = document.getElementById('questChoices');
-        container.innerHTML = "";
-        
-        snap.forEach(c => {
-            const q = c.val();
-            if(q.type === targetType || container.children.length < 3) {
-                let card = document.createElement('div'); card.className='q-card';
-                card.innerHTML = `<strong>[${q.type}]</strong><br>${q.title}`;
-                card.onclick = () => {
-                    document.querySelectorAll('.q-card').forEach(x=>x.classList.remove('selected'));
-                    card.classList.add('selected'); selectedQuest = q;
-                    document.getElementById('finBtn').disabled = false;
-                };
-                container.appendChild(card);
-            }
+        new Chart(ctx, {
+            type: 'radar',
+            data: { labels, datasets: [{ label: '내 마음 에너지', data: dataValues, backgroundColor: 'rgba(230, 179, 30, 0.4)', borderColor: 'rgba(230, 179, 30, 1)', borderWidth: 3 }] },
+            options: { scales: { r: { min: 0, max: 100, ticks: { display: false } } } }
+        });
+
+        // 퀘스트 추천
+        const advice = (selectedTags.includes("분노") || selectedTags.includes("피곤")) 
+            ? "오늘 마음의 온도가 높거나 낮네요. '배려'의 행동으로 에너지를 정화해보세요."
+            : "아주 좋은 기운입니다! '사랑' 혹은 '존중' 퀘스트를 통해 에너지를 나눠보세요.";
+        document.getElementById('adviceBox').innerText = advice;
+
+        const qContainer = document.getElementById('questChoices');
+        qContainer.innerHTML = "";
+        const types = ["배려", "존중", "사랑"];
+        types.forEach(type => {
+            let card = document.createElement('div'); card.className='q-card';
+            card.innerHTML = `<strong>[${type}]</strong><br>주변의 쓰레기를 줍거나 친구에게 인사하기`;
+            card.onclick = () => {
+                document.querySelectorAll('.q-card').forEach(x=>x.classList.remove('selected'));
+                card.classList.add('selected'); selectedQuest = {title: card.innerText, type: type};
+                document.getElementById('finBtn').disabled = false;
+            };
+            qContainer.appendChild(card);
         });
     }
 
-    function submit() {
-        const n = prompt("번호 입력 (1~23)", "1") || "1";
-        // 학생별 고유 픽셀 이미지 (깨지지 않는 포켓몬/애니메이션 도트 경로)
+    function submitAll() {
+        const n = prompt("번호 입력(1~23)", "1") || "1";
         const charImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${n}.gif`;
-        
-        db.ref(`room/student${n}`).set({
-            num:n, emojiImg:finalImg, charImg:charImg, diary:selectedTags.join(", "), status:'online', gems:{배려:0,존중:0,사랑:0}
-        });
-        db.ref(`room/student${n}/myQuests`).push(selectedQuest)
-        .then(() => location.href=`classroom.html?num=${n}`);
+        db.ref(`room/student${n}`).set({ num:n, emojiImg:finalImg, charImg:charImg, diary:document.getElementById('diary').value, status:'online', gems:{배려:0,존중:0,사랑:0} });
+        db.ref(`room/student${n}/myQuests`).push(selectedQuest).then(() => location.href=`classroom.html?num=${n}`);
     }
 </script>
 </body>
