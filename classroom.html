@@ -2,30 +2,41 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 CLASSROOM</title>
+    <title>6학년 5반 감정 지도 대시보드</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<div class="game-window">
-    <div class="window-header"><span>🏫 6학년 5반 실시간 감정 지도</span></div>
-    <div class="classroom-grid" id="floor"></div>
+<div class="app-window">
+    <div class="nav-bar">
+        <span style="font-size:24px;">🏫 6학년 5반 실시간 감정 지도</span>
+        <div id="statsCounter" style="font-size:16px;">접속 인원: 0 / 23명</div>
+    </div>
+
+    <div class="classroom-floor" id="deskContainer">
+        </div>
 </div>
 
-<div id="modal" class="modal-overlay" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <h2 id="m-title" style="color:var(--gold);">학생 정보</h2>
-        <div id="m-emoji" style="font-size:80px; margin:20px 0;">?</div>
-        <div id="m-tags" style="color:blue; font-weight:bold; margin-bottom:10px;"></div>
-        <div id="m-diary" style="font-size:18px; line-height:1.5; background:#f9f9f9; padding:15px;"></div>
-        <button class="pixel-btn" style="width:100%; margin-top:20px;" onclick="closeModal()">닫기</button>
+<div id="infoModal" class="modal" onclick="closeModal()">
+    <div class="modal-content" style="background: none; border: none; width: auto;" onclick="event.stopPropagation()">
+        <div class="modal-card">
+            <div id="popStudentInfo" style="margin-bottom:10px; font-size:18px; border-bottom:1px solid #333; padding-bottom:5px;"></div>
+            <div class="modal-card-img" id="popEmoji">✨</div>
+            <div style="color:#3897f0; font-weight:bold; margin-bottom:5px;" id="popTags">#태그</div>
+            <div style="font-size:14px; color:#ccc; min-height:50px;" id="popDiary">학생의 한 줄 일기가 표시됩니다.</div>
+            <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px; color:#ffd700;">
+                🎯 미션: <span id="popQuest" style="color:white;">미선택</span>
+            </div>
+            <button class="btn-main" style="width:100%; margin-top:20px; font-size:15px;" onclick="closeModal()">닫기</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = { /* 위와 동일하게 입력 */
+    // Firebase 설정 (index.html과 동일하게 유지)
+    const firebaseConfig = {
         apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
         authDomain: "secret-quest-class.firebaseapp.com",
         databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/",
@@ -37,33 +48,53 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    const floor = document.getElementById('floor');
+    // 1. 책상 그리드 생성 (23명 기준)
+    const container = document.getElementById('deskContainer');
     for(let i=1; i<=23; i++) {
-        const d = document.createElement('div'); d.className='desk'; d.id=`desk-${i}`;
-        d.innerHTML = `<span>${i}번</span>`; floor.appendChild(d);
+        const desk = document.createElement('div');
+        desk.className = 'desk';
+        desk.id = `desk-${i}`;
+        desk.innerHTML = `<div class="desk-num">${i}번</div><div class="desk-status">빈자리</div>`;
+        container.appendChild(desk);
     }
 
-    database.ref('room/').on('value', (snap) => {
-        const data = snap.val(); if(!data) return;
-        for(let key in data) {
-            const s = data[key];
-            const desk = document.getElementById(`desk-${s.num}`);
-            if(desk) {
-                desk.className = "desk online";
-                desk.innerHTML = `<span>${s.emoji}</span><span>${s.name}</span>`;
-                desk.onclick = () => openModal(s);
+    // 2. 실시간 데이터 연동
+    database.ref('room/').on('value', (snapshot) => {
+        const data = snapshot.val();
+        let onlineCount = 0;
+
+        if (data) {
+            for (let key in data) {
+                const student = data[key];
+                const desk = document.getElementById(`desk-${student.num}`);
+                if (desk) {
+                    onlineCount++;
+                    desk.className = 'desk online';
+                    desk.innerHTML = `
+                        <div class="desk-emoji">${student.emoji}</div>
+                        <div class="desk-name">${student.name}</div>
+                    `;
+                    // 클릭 시 팝업 열기
+                    desk.onclick = () => openModal(student);
+                }
             }
         }
+        document.getElementById('statsCounter').innerText = `접속 인원: ${onlineCount} / 23명`;
     });
 
+    // 3. 모달 제어 함수
     function openModal(s) {
-        document.getElementById('modal').style.display='flex';
-        document.getElementById('m-title').innerText = `${s.num}번 ${s.name}의 카드`;
-        document.getElementById('m-emoji').innerText = s.emoji;
-        document.getElementById('m-tags').innerText = s.tags;
-        document.getElementById('m-diary').innerText = s.diary;
+        document.getElementById('infoModal').style.display = 'flex';
+        document.getElementById('popStudentInfo').innerText = `${s.num}번 ${s.name} 학생`;
+        document.getElementById('popEmoji').innerText = s.emoji;
+        document.getElementById('popTags').innerText = s.tags || "#없음";
+        document.getElementById('popDiary').innerText = s.diary || "입력한 내용이 없습니다.";
+        document.getElementById('popQuest').innerText = s.quest || "미선택";
     }
-    function closeModal() { document.getElementById('modal').style.display='none'; }
+
+    function closeModal() {
+        document.getElementById('infoModal').style.display = 'none';
+    }
 </script>
 </body>
 </html>
