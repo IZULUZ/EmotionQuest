@@ -6,47 +6,41 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        /* 둥근모 폰트 적용 (도트 느낌) */
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
         :root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; --pm-inner: #fff9eb; }
         
-        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #333; }
+        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #333; overflow: hidden; }
         
-        /* 메인 윈도우 (프린세스 메이커 느낌) */
         .window { width: 1000px; height: 750px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
         .header { background: var(--pm-dark); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
         .content { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
         
-        /* 왼쪽: 움직이는 픽셀 캐릭터 영역 */
-        .side { width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        .side { width: 320px; display: flex; flex-direction: column; gap: 10px; }
         .char-frame { width: 100%; height: 350px; background: var(--pm-inner); border: 5px outset var(--pm-gold); display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .char-pixel { width: 110%; height: 110%; object-fit: contain; image-rendering: pixelated; /* 도트 뭉개짐 방지 */ }
+        .char-pixel { width: 150px; height: auto; image-rendering: pixelated; } /* 픽셀 깨짐 방지 */
         
-        /* 크게 키운 조언 상자 */
-        .advice-box { background: #fff; border: 3px inset #333; padding: 15px; flex: 1; font-size: 19px; line-height: 1.6; overflow-y: auto; color: #111; }
-        .advice-box b { color: #d32f2f; font-size: 21px; }
+        .advice-box { background: #fff; border: 3px inset #333; padding: 15px; flex: 1; font-size: 18px; line-height: 1.6; overflow-y: auto; color: #111; }
+        .advice-box b { color: #d32f2f; font-size: 20px; }
 
-        /* 오른쪽: 카드 및 컨트롤 영역 */
         .main-panel { flex: 1; background: #1a1a1a; border: 4px double var(--pm-gold); border-radius: 15px; display: flex; flex-direction: column; align-items: center; padding: 20px; color: white; }
         
-        /* 30종 이모지 스크롤 박스 */
-        .emoji-scroll { width: 100%; height: 200px; overflow-y: scroll; background: #fff; border: 4px inset #333; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 10px; margin-bottom: 10px; }
-        .emoji-item { font-size: 40px; cursor: pointer; text-align: center; transition: transform 0.1s; user-select: none; }
-        .emoji-item:hover { transform: scale(1.2); }
-        .emoji-item.selected { background: #fee185; border-radius: 10px; }
+        /* 이모지 그리드 스타일 수정 */
+        .emoji-scroll { width: 100%; height: 220px; overflow-y: scroll; background: #fff; border: 4px inset #333; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 10px; margin-bottom: 10px; }
+        .emoji-item { font-size: 40px; cursor: pointer; text-align: center; line-height: 1.5; user-select: none; }
+        .emoji-item:hover { background: #eee; border-radius: 8px; }
+        .emoji-item.selected { background: #fee185; border-radius: 8px; }
 
-        .result-display { display: flex; align-items: center; font-size: 50px; gap: 15px; color: #fff; margin: 10px 0; }
+        .result-display { display: flex; align-items: center; font-size: 45px; gap: 15px; color: #fff; margin: 10px 0; }
         
-        /* 태그 시스템 */
         .tag-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
-        .tag { background: #333; border: 1px solid var(--pm-gold); color: gold; padding: 5px 12px; border-radius: 15px; cursor: pointer; font-size: 14px; }
+        .tag { background: #333; border: 1px solid var(--pm-gold); color: gold; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 14px; }
         .tag.on { background: var(--pm-gold); color: #000; font-weight: bold; }
 
-        input { width: 90%; background: none; border: none; border-bottom: 2px solid #555; color: white; text-align: center; font-family: inherit; font-size: 16px; padding: 10px; margin-top: 10px; }
+        input { width: 90%; background: #333; border: 2px solid var(--pm-gold); color: white; text-align: center; font-family: inherit; font-size: 16px; padding: 10px; margin-top: 10px; }
         
-        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px 20px; cursor: pointer; font-family: inherit; font-size: 18px; transition: 0.1s; }
-        .pm-btn:disabled { opacity: 0.4; }
-        .pm-btn:active { border-style: inset; transform: scale(0.98); }
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 15px 20px; cursor: pointer; font-family: inherit; font-size: 20px; margin-top: 15px; width: 100%; }
+        .pm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .pm-btn:active { border-style: inset; }
     </style>
 </head>
 <body>
@@ -58,14 +52,14 @@
             <div class="char-frame">
                 <img id="charImg" src="" class="char-pixel">
             </div>
-            <div class="advice-box" id="adviceArea">
-                <b>◈ 연금술사의 조언</b><br><br>
-                <span id="adviceText">오늘 어떤 기분이었나요? 아래에서 이모지 2개와 감정 단어를 골라주세요.</span>
+            <div class="advice-box">
+                <b>◈ 연금술사의 조언</b><br>
+                <span id="adviceText">오늘 어떤 기분이었나요? 이모지 2개와 감정 단어를 골라주세요.</span>
             </div>
         </div>
 
         <div class="main-panel">
-            <div style="font-size: 13px; color: gold; margin-bottom: 8px;">▼ 이모지를 2개 선택하세요 (스크롤)</div>
+            <div style="font-size: 13px; color: gold; margin-bottom: 8px;">▼ 이모지를 2개 선택하세요 (스크롤 가능)</div>
             <div class="emoji-scroll" id="emojiGrid"></div>
             
             <div class="result-display">
@@ -75,47 +69,73 @@
             <div class="tag-container" id="tagList"></div>
             <input type="text" id="diaryInput" placeholder="오늘 있었던 일을 짧게 기록해보세요..." maxlength="30">
 
-            <div style="margin-top:auto; width:100%;">
-                <button id="entryBtn" class="pm-btn" style="width:100%;" disabled onclick="enterClass()">감정 카드 완성! 교실 입장 🚪</button>
-            </div>
+            <button id="entryBtn" class="pm-btn" disabled onclick="enterClass()">감정 카드 완성! 교실 입장 🚪</button>
         </div>
     </div>
 </div>
 
 <script>
-    // 선생님의 Firebase 설정 (붙여넣기)
-    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.database();
+    // Firebase 설정
+    const firebaseConfig = { 
+        apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", 
+        authDomain: "secret-quest-class.firebaseapp.com", 
+        databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", 
+        projectId: "secret-quest-class", 
+        storageBucket: "secret-quest-class.firebasestorage.app", 
+        messagingSenderId: "397245266210", 
+        appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-    const sNum = prompt("본인의 번호를 입력하세요 (1~23)", "1");
-    // 움직이는 픽셀 캐릭터 GIF 연동 (인터넷에서 찾은 귀여운 도트 캐릭터)
-    // 1번은 남자 도트, 2번은 여자 도트 스타일로 랜덤 매칭 (또는 번호별 고정)
+    // 접속하자마자 번호 입력받기
+    const sNum = prompt("본인의 번호를 입력하세요 (1~23)", "1") || "1";
+    
+    // 캐릭터 이미지 (절대 깨지지 않는 픽셀 스타일 GIF로 교체)
     const charUrl = (parseInt(sNum) % 2 === 1) 
-        ? "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM3ZkMmh0Z3R3dmN2bmZ3ZDNnZndmeWpmeWpmMTNmMTZmeWpmMSZjdD1n/mCRJDo24UvDP8fN6Y3/giphy.gif" // 픽셀 남 1
-        : "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzMxeGZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3JjdD1n/vE5Dfx021xT52Lup2O/giphy.gif"; // 픽셀 여 2
+        ? "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif" // 귀여운 피카츄형 픽셀
+        : "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/151.gif"; // 귀여운 뮤형 픽셀
     document.getElementById('charImg').src = charUrl;
 
-    // 32개 이모지 리스트
     const emojis = ["😊","😡","😢","🥰","🤔","🥳","😎","😴","🔥","🌈","🤢","😱","🤩","😭","🫠","😶‍🌫️","🤯","🥺","🤤","👺","👾","👻","💀","🤡","🤖","🎃","⭐","🌙","🍀","💎","🎨","🎮"];
     let sel1 = null, sel2 = null, finalTags = [];
-    const words = ["설렘", "뿌듯", "걱정", "당당", "평온", "신남", "짜증", "슬픔", "몽글몽글", "피곤", "자신감", "행복"];
+    const words = ["설렘", "뿌듯", "걱정", "당당", "평온", "신남", "짜증", "슬픔", "몽글", "피곤", "자신감", "행복"];
 
+    // 이모지 그리드 생성
     const grid = document.getElementById('emojiGrid');
     emojis.forEach(e => {
-        let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = e;
+        let div = document.createElement('div');
+        div.className = 'emoji-item';
+        div.innerText = e;
         div.onclick = () => {
-            if(!sel1 || (sel1 && sel2)) { sel1=e; sel2=null; document.getElementById('slot1').innerText=e; document.getElementById('slot2').innerText="❓"; }
-            else { sel2=e; document.getElementById('slot2').innerText=e; updateAdvice(); }
+            if(!sel1 || (sel1 && sel2)) {
+                sel1 = e; sel2 = null;
+                document.getElementById('slot1').innerText = e;
+                document.getElementById('slot2').innerText = "❓";
+            } else {
+                sel2 = e;
+                document.getElementById('slot2').innerText = e;
+                updateAdvice();
+            }
+            checkReady();
         };
         grid.appendChild(div);
     });
 
+    // 태그 생성
     const tl = document.getElementById('tagList');
     words.forEach(w => {
-        let b = document.createElement('div'); b.className='tag'; b.innerText=w;
+        let b = document.createElement('div');
+        b.className = 'tag';
+        b.innerText = w;
         b.onclick = () => {
-            if(b.classList.contains('on')) { b.classList.remove('on'); finalTags = finalTags.filter(t=>t!==w); }
-            else if(finalTags.length < 3) { b.classList.add('on'); finalTags.push(w); }
+            if(b.classList.contains('on')) {
+                b.classList.remove('on');
+                finalTags = finalTags.filter(t => t !== w);
+            } else if(finalTags.length < 3) {
+                b.classList.add('on');
+                finalTags.push(w);
+            }
             checkReady();
         };
         tl.appendChild(b);
@@ -124,29 +144,38 @@
     function updateAdvice() {
         if(!sel1 || !sel2) return;
         const comb = sel1 + sel2;
-        let txt = "오늘 마음 상태는 안정적입니다. 여유로운 마음으로 새로운 도전을 시작하기 좋은 날이에요.";
-        if(comb.match(/😡|🔥/)) txt = "마음에 열정(혹은 화)이 가득 차 있습니다! 이 에너지를 운동이나 집중 과제에 쏟으면 최고의 결과를 낼 것입니다.";
-        else if(comb.match(/😢|😭|😴/)) txt = "마음의 배터리가 조금 부족한 날입니다. 무리하지 말고 자기 자신을 아껴주는 시간을 꼭 가져보세요.";
-        document.getElementById('adviceText').innerHTML = `오늘 ${sel1}와 ${sel2}를 골랐군요. ${txt}`;
-        checkReady();
+        let txt = "오늘은 참 평온한 마음을 가지고 있군요!";
+        if(comb.match(/😡|🔥/)) txt = "마음 속에 에너지가 넘치고 있어요! 이 기운을 긍정적인 곳에 써보세요.";
+        else if(comb.match(/😢|😭|😴/)) txt = "조금 쉬어가도 괜찮아요. 따뜻한 차 한 잔 어때요?";
+        document.getElementById('adviceText').innerHTML = `오늘 ${sel1}와 ${sel2}를 골랐군요. <br>${txt}`;
     }
 
     function checkReady() {
+        const btn = document.getElementById('entryBtn');
         if(sel1 && sel2 && finalTags.length >= 2) {
-            document.getElementById('entryBtn').disabled = false;
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
         }
     }
 
     function enterClass() {
-        // 구글 이모지 키친 실제 합성 로직으로 복구 (안전하게 u+코드 방식 사용)
-        const emojiUrl = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${sel1.codePointAt(0).toString(16)}/u${sel1.codePointAt(0).toString(16)}_u${sel2.codePointAt(0).toString(16)}.png`;
+        const u1 = sel1.codePointAt(0).toString(16);
+        const u2 = sel2.codePointAt(0).toString(16);
+        const emojiUrl = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${u1}/u${u1}_u${u2}.png`;
+
         db.ref(`room/student${sNum}`).set({
-            num: sNum, name: sNum+"번 학생", emojiImg: emojiUrl, 
-            gender: (parseInt(sNum)%2===1?'male':'female'), tags: finalTags, 
-            diary: document.getElementById('diaryInput').value, status: "online", 
-            gems: {respect:0, care:0, love:0}
+            num: sNum,
+            name: sNum + "번 학생",
+            emojiImg: emojiUrl,
+            gender: (parseInt(sNum) % 2 === 1 ? 'male' : 'female'),
+            tags: finalTags,
+            diary: document.getElementById('diaryInput').value,
+            status: "online",
+            gems: { respect: 0, care: 0, love: 0 }
+        }).then(() => {
+            location.href = `classroom.html?num=${sNum}`;
         });
-        location.href = `classroom.html?num=${sNum}`;
     }
 </script>
 </body>
