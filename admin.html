@@ -2,51 +2,92 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 관리자</title>
+    <title>6-5 인성 통제실</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+    <style>
+        .admin-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; padding: 20px; }
+        .st-box { background: #eee; border: 3px solid #ccc; height: 120px; text-align: center; padding: 10px; }
+        .st-box.active { background: #fff9eb; border-color: var(--pm-gold); }
+        .card-wall { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:white; overflow-y:auto; padding:50px; z-index:2000; }
+        .card-item { border: 5px ridge #2d1b15; background: #fdf5e6; padding: 15px; display: inline-block; width: 220px; margin: 10px; vertical-align: top; }
+    </style>
 </head>
 <body>
-<div class="window" style="width:800px; height:600px;">
-    <div class="header">⚙️ 교사 전용 관리 시스템</div>
-    <div class="main-content" style="flex-direction:column;">
-        <div class="frame" style="flex:1; overflow-y:auto;">
-            <h3>🚩 퀘스트 완료 승인 대기 목록</h3>
-            <div id="reqList"></div>
+<div class="window" style="width: 1200px; height: 850px;">
+    <div class="header">
+        <span>⚙️ 교사 통합 관리 패널</span>
+        <div>
+            <button class="pm-btn" onclick="toggleWall()">🗂️ 감정카드 모아보기</button>
+            <button class="pm-btn" onclick="location.href='index.html'">돌아가기</button>
         </div>
-        <button class="pm-btn" onclick="location.href='classroom.html'">교실로 돌아가기</button>
+    </div>
+    <div style="padding: 20px;">
+        <h3>🚦 실시간 출석 및 퀘스트 보고</h3>
+        <div class="admin-grid" id="adminGrid"></div>
+        <hr>
+        <h3>🔔 보석 지급 승인 대기</h3>
+        <div id="reqList" style="background:white; border:3px inset #333; padding:15px; height:150px; overflow-y:auto;"></div>
     </div>
 </div>
+
+<div id="cardWall" class="card-wall">
+    <button class="pm-btn" onclick="toggleWall()" style="position:fixed; top:20px; right:20px;">닫기</button>
+    <h2>🖼️ 6학년 5반 오늘의 감정 갤러리</h2>
+    <div id="wallContent"></div>
+</div>
+
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.database();
+    const grid = document.getElementById('adminGrid');
+    for(let i=1; i<=23; i++) grid.innerHTML += `<div class="st-box" id="box${i}"><h4>${i}번</h4><div id="img${i}"></div></div>`;
 
     db.ref('room/').on('value', snap => {
-        const l = document.getElementById('reqList'); l.innerHTML = "";
+        const reqList = document.getElementById('reqList'); reqList.innerHTML = "";
+        const wall = document.getElementById('wallContent'); wall.innerHTML = "";
+        
         snap.forEach(c => {
             const s = c.val();
-            if(s.requestDone) {
-                l.innerHTML += `<div class="frame" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span><b>${s.num}번 학생</b>이 퀘스트를 완료했습니다.</span>
-                    <button class="pm-btn" style="width:100px;" onclick="approve('${s.num}')">승인</button>
-                </div>`;
+            const box = document.getElementById(`box${s.num}`);
+            if(s.status === 'online') {
+                box.className = 'st-box active';
+                document.getElementById(`img${s.num}`).innerHTML = `<img src="${s.emojiImg}" width="40">`;
+                
+                // 카드 갤러리 내용물
+                wall.innerHTML += `
+                    <div class="card-item">
+                        <strong>${s.num}번 학생</strong><br>
+                        <img src="${s.emojiImg}" width="60"><br>
+                        <small>${s.tags.map(t=>"#"+t).join(" ")}</small><br>
+                        <p style="font-size:12px; height:50px; overflow:hidden;">${s.diary}</p>
+                    </div>
+                `;
+            }
+
+            if(s.reqDone) {
+                reqList.innerHTML += `
+                    <div style="margin-bottom:10px; border-bottom:1px solid #eee; padding:5px;">
+                        ${s.num}번 학생 퀘스트 완료: [${s.quest}] 
+                        <button class="pm-btn" style="padding:3px 10px; font-size:12px;" onclick="approve('${s.num}')">승인</button>
+                    </div>
+                `;
             }
         });
     });
 
     function approve(n) {
         db.ref(`room/student${n}`).once('value', snap => {
-            const s = snap.val(); const qKey = s.requestDone.key;
-            db.ref(`room/student${n}/myQuests/${qKey}`).once('value', qSnap => {
-                const q = qSnap.val();
-                let cur = s.gems[q.type] || 0;
-                db.ref(`room/student${n}/gems/${q.type}`).set(cur + 1);
-                db.ref(`room/student${n}/requestDone`).remove();
-                db.ref(`room/student${n}/myQuests/${qKey}`).remove();
-                alert(`${n}번 학생 보석 지급 및 승인 완료!`);
-            });
+            const s = snap.val();
+            db.ref(`room/student${n}/gems/배려`).set((s.gems.배려 || 0) + 1);
+            db.ref(`room/student${n}/reqDone`).remove();
+            alert(n + "번 학생에게 미덕 보석을 지급했습니다.");
         });
+    }
+
+    function toggleWall() {
+        const w = document.getElementById('cardWall');
+        w.style.display = w.style.display === 'block' ? 'none' : 'block';
     }
 </script>
 </body>
