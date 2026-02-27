@@ -1,0 +1,71 @@
+@font-face {
+    font-family: 'DungGeunMo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
+}
+
+:root {
+    --gold: #d4af37;
+    --win-bg: #fffafa;
+    --text: #5d4037;
+}
+
+body {
+    background: #a6c1ee url('https://www.transparenttextures.com/patterns/notebook.png');
+    font-family: 'DungGeunMo', sans-serif;
+    color: var(--text);
+    margin: 0; padding: 20px;
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+}
+
+.game-window {
+    width: 900px; background: var(--win-bg); border: 6px double var(--gold);
+    box-shadow: 10px 10px 0px rgba(0,0,0,0.1); padding: 25px; position: relative;
+}
+
+.window-header {
+    background: var(--gold); color: white; padding: 8px 15px;
+    margin: -25px -25px 20px -25px; display: flex; justify-content: space-between;
+}
+
+.main-ui { display: flex; gap: 25px; }
+.left-panel { width: 280px; text-align: center; border-right: 2px solid #eee; padding-right: 20px; }
+.right-panel { flex: 1; }
+
+/* 캐릭터 영역 */
+.char-frame {
+    border: 4px solid var(--gold); height: 220px; background: white;
+    margin-bottom: 15px; display: flex; justify-content: center; align-items: center;
+}
+
+/* 감정 스테이터스 창 */
+.status-window { border: 2px solid var(--gold); padding: 12px; background: #fef9e7; }
+.stat-row { margin-bottom: 10px; font-size: 14px; }
+.gauge-bg { background: #e0e0e0; height: 14px; border-radius: 7px; border: 1px solid #999; overflow: hidden; }
+.gauge-fill { height: 100%; width: 20%; transition: width 1s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+/* 퀘스트/미션 보드 */
+.mission-board {
+    background: #fffbe6; border: 2px solid #d2b48c; padding: 15px;
+    border-radius: 10px; margin-top: 15px; min-height: 100px;
+}
+
+/* 픽셀 버튼 */
+.pixel-btn {
+    background: #f8f9fa; border: 3px outset #fff; padding: 12px;
+    cursor: pointer; font-family: 'DungGeunMo'; margin: 5px 0; width: 100%;
+}
+.pixel-btn:active { border-style: inset; background: #eee; }
+
+/* 교실 그리드 */
+.classroom-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+    background: #d2b48c; padding: 25px; border: 5px solid #8b4513;
+}
+.desk {
+    background: #8b4513; color: white; height: 70px; border: 2px solid #5d4037;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 12px; cursor: pointer;
+}
+.desk.online { background: white; color: #333; border: 3px solid var(--gold); animation: pulse 2s infinite; }
+
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
