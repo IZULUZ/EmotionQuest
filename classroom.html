@@ -6,38 +6,24 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 <div class="window">
-    <div class="header">
-        <span>📅 2026년 2월 28일</span>
-        <span>🏫 6학년 5반 교실</span>
-        <span id="userName">Student No.0</span>
-    </div>
-    <div class="main-content">
-        <div class="left-panel">
-            <div class="frame char-frame">
-                <img id="myAvatar" src="" class="avatar">
-                <div id="myEmoji" class="emoji-overlay"></div>
+    <div class="header">🏫 6학년 5반 교실 (좌석 현황)</div>
+    <div class="classroom-main">
+        <div class="seat-area" id="seatGrid"></div>
+        <div class="menu-area">
+            <button class="pm-btn" onclick="location.href='index.html'">📋 내 감정 카드 보러가기</button>
+            <div class="frame" style="background:#fff; border:3px solid var(--pm-dark); padding:10px; flex:1;">
+                <h4 style="margin:0 0 10px 0;">📜 진행 중인 퀘스트</h4>
+                <div id="myQuestDisp" style="font-size:14px; color:#c00; font-weight:bold;"></div>
+                <button class="pm-btn" style="margin-top:10px; font-size:12px;" onclick="reportQuest()">완료 보고하기</button>
             </div>
-            <div class="frame status-frame">
-                <canvas id="statChart"></canvas>
+            <div class="frame" style="background:#fff; border:3px solid var(--pm-dark); padding:10px;">
+                <h4 style="margin:0 0 5px 0;">💎 미덕 보석함</h4>
+                <div id="myGems" style="font-size:13px;"></div>
             </div>
-            <div class="frame" style="background:var(--pm-dark); color:var(--pm-gold); padding:10px;">
-                💎 보석: <span id="gemStat">배려0 존중0 사랑0</span>
-            </div>
-        </div>
-        <div class="right-panel">
-            <div class="frame" style="height:350px; overflow-y:auto;">
-                <h3>🪑 교실 좌석표</h3>
-                <div id="seatGrid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;"></div>
-            </div>
-            <div class="frame quest-frame">
-                <h3 style="margin-top:0;">📜 진행중인 퀘스트</h3>
-                <div id="qList"></div>
-            </div>
-            <button class="pm-btn" onclick="goAdmin()">⚙️ 교사용 페이지 연결</button>
+            <button class="pm-btn" style="background:#888;">📢 퀘스트 게시판</button>
         </div>
     </div>
 </div>
@@ -47,39 +33,29 @@
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
     const myNum = new URLSearchParams(window.location.search).get('num') || "1";
 
-    const sGrid = document.getElementById('seatGrid');
-    for(let i=1; i<=23; i++) { sGrid.innerHTML += `<div id="d${i}" style="border:2px solid #3e2723; height:50px; text-align:center; font-size:12px; background:#4e342e; color:#fff;">${i}</div>`; }
-
-    const ctx = document.getElementById('statChart').getContext('2d');
-    let myChart = new Chart(ctx, { type: 'radar', data: { labels: ["배려", "존중", "성실", "용기", "절제", "사랑"], datasets: [{ data: [0,0,0,0,0,0], backgroundColor: 'rgba(230,179,30,0.3)', borderColor: 'var(--pm-gold)' }] }, options: { scales: { r: { min:0, max:100, ticks:{display:false} } }, plugins:{legend:{display:false}} } });
+    // 좌석 생성
+    const grid = document.getElementById('seatGrid');
+    for(let i=1; i<=23; i++) { grid.innerHTML += `<div class="desk" id="d${i}">${i}</div>`; }
 
     db.ref('room/').on('value', snap => {
         snap.forEach(c => {
             const s = c.val(); const d = document.getElementById(`d${s.num}`);
             if(d && s.status==='online') {
-                d.style.background='#fff'; d.style.color='#000';
+                d.className = 'desk online';
                 d.innerHTML = `<img src="${s.emojiImg}" width="20"><br>${s.num}번`;
             }
         });
         const me = snap.val()[`student${myNum}`];
         if(me) {
-            document.getElementById('userName').innerText = `No.${me.num} 학생`;
-            document.getElementById('myAvatar').src = me.charImg;
-            document.getElementById('myEmoji').innerHTML = `<img src="${me.emojiImg}" width="80">`;
-            document.getElementById('gemStat').innerText = `배려:${me.gems.배려} 존중:${me.gems.존중} 사랑:${me.gems.사랑}`;
-            myChart.data.datasets[0].data = me.stats; myChart.update();
+            document.getElementById('myQuestDisp').innerText = me.quest || "선택된 퀘스트 없음";
+            document.getElementById('myGems').innerHTML = `배려:${me.gems.배려} 존중:${me.gems.존중} 사랑:${me.gems.사랑}`;
         }
     });
 
-    db.ref(`room/student${myNum}/myQuests`).on('value', snap => {
-        const l = document.getElementById('qList'); l.innerHTML = "";
-        snap.forEach(c => {
-            l.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between;"><span>${c.val().title}</span> <button onclick="report('${c.key}')">완료보고</button></div>`;
-        });
-    });
-
-    function report(k) { db.ref(`room/student${myNum}/requestDone`).set({key:k}); alert("보고 완료! 선생님의 승인을 기다리세요."); }
-    function goAdmin() { if(prompt("비밀번호")==="1234") location.href="admin.html"; }
+    function reportQuest() {
+        db.ref(`room/student${myNum}/requestDone`).set(true);
+        alert("선생님께 완료 보고를 보냈습니다!");
+    }
 </script>
 </body>
 </html>
