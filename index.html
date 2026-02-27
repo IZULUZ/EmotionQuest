@@ -7,144 +7,81 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        :root { --pm-dark: #2d1b15; --pm-gold: #e6b31e; --pm-bg: #fdf5e6; }
-        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; }
-        .pm-window { width: 1000px; height: 750px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); display: flex; flex-direction: column; position: relative; color: #333; }
-        .pm-header { background: var(--pm-dark); color: var(--pm-gold); padding: 15px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
-        .content { display: flex; flex: 1; padding: 25px; gap: 25px; overflow: hidden; }
-        
-        /* 3D 캐릭터 영역 */
-        .char-side { width: 320px; display: flex; flex-direction: column; gap: 15px; }
-        .char-frame { width: 100%; height: 400px; background: linear-gradient(to bottom, #fff, #ddd); border: 4px inset var(--pm-dark); position: relative; overflow: hidden; }
-        .char-3d { width: 100%; height: 100%; object-fit: contain; animation: bounce 2s infinite ease-in-out; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-        /* 조언 텍스트 크게 */
-        .advice-box { background: white; border: 3px inset #333; padding: 20px; flex: 1; font-size: 20px; line-height: 1.6; color: #1a1a1a; overflow-y: auto; }
-        .advice-box b { color: #d32f2f; font-size: 22px; }
-
-        .main-card { flex: 1; background: #1a1a1a; border: 4px double var(--pm-gold); border-radius: 20px; display: flex; flex-direction: column; align-items: center; padding: 25px; color: white; }
-        .mix-display { width: 160px; height: 160px; background: #000; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border: 2px solid #444; }
-        .mix-display img { width: 100%; height: 100%; }
-        
-        .quest-list { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
-        .q-item { background: #333; border: 1px solid var(--pm-gold); padding: 12px; cursor: pointer; text-align: center; transition: 0.2s; font-size: 16px; }
-        .q-item:hover { background: #444; }
-        .q-item.selected { background: var(--pm-gold); color: black; font-weight: bold; }
-        
-        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 12px 25px; cursor: pointer; font-family: inherit; font-size: 18px; }
-        .pm-btn:disabled { opacity: 0.3; }
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; justify-content:center; align-items:center; }
-        #adminLink { position: absolute; top: 0; right: 0; width: 40px; height: 40px; cursor: pointer; }
+        :root { --pm-dark: #3e2723; --pm-gold: #c5a059; --pm-bg: #fdf5e6; }
+        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .pm-window { width: 900px; height: 650px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; }
+        .pm-header { background: linear-gradient(to bottom, #5d4037, #3e2723); color: var(--pm-gold); padding: 10px; text-align: center; font-size: 22px; border-bottom: 4px double var(--pm-gold); }
+        .content { display: flex; flex: 1; padding: 20px; gap: 20px; }
+        .side { width: 300px; display: flex; flex-direction: column; gap: 10px; }
+        .avatar-preview { width: 100%; height: 250px; background: white; border: 4px inset var(--pm-dark); display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .main-card { flex: 1; background: #000; border: 4px double var(--pm-gold); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; padding: 20px; }
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; }
+        .pm-btn:active { border-style: inset; }
+        input { padding: 10px; font-family: inherit; border: 3px inset #ccc; }
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; }
+        .modal-inner { background: var(--pm-bg); border: 8px ridge var(--pm-dark); padding: 20px; width: 450px; }
     </style>
 </head>
 <body>
 
 <div class="pm-window">
-    <div id="adminLink" onclick="goAdmin()"></div>
-    <div class="pm-header">✨ 6학년 5반 감정 연금술소 ✨</div>
+    <div class="pm-header">6-5 EMOTION ALCHEMY LAB</div>
     <div class="content">
-        <div class="char-side">
-            <div class="char-frame">
-                <img id="charImg" src="" class="char-3d">
-            </div>
-            <div class="advice-box">
-                <b>[연금술사의 조언]</b><br>
-                <span id="adviceText">재료를 섞어주세요...</span>
-            </div>
+        <div class="side">
+            <div class="avatar-preview"><img id="avatarImg" src="" style="height:110%"></div>
+            <button class="pm-btn" onclick="openModal('customModal')">👗 아바타 커스텀</button>
+            <button class="pm-btn" onclick="openModal('mixModal')">🔮 감정 연금술(Kitchen)</button>
+            <div id="statusAdvice" style="font-size:12px; background:white; padding:10px; border:1px solid var(--pm-gold); flex:1; margin-top:10px;">"감정을 섞어 당신만의 카드를 만드세요."</div>
         </div>
-
         <div class="main-card">
-            <div class="mix-display">
-                <img id="mixImg" src="https://via.placeholder.com/150/000000/FFFFFF?text=?" style="display:block;">
-            </div>
-            <h2 id="resTag" style="color:var(--pm-gold); margin: 0 0 10px 0;">#감정_연성_대기</h2>
-            <input type="text" id="diary" placeholder="오늘 내 마음은..." style="width:90%; background:none; border:none; border-bottom:2px solid #555; color:white; text-align:center; font-family:inherit; font-size:18px; padding:10px;">
-            
-            <div id="qArea" style="display:none; width:100%;">
-                <p style="text-align:center; color:var(--pm-gold); font-size:14px; margin:15px 0 5px 0;">▼ 수행할 감정 퀘스트 선택</p>
-                <div class="quest-list" id="ql"></div>
-            </div>
-
-            <div style="margin-top:auto; display:flex; gap:15px; width:100%;">
-                <button class="pm-btn" style="flex:1" onclick="document.getElementById('mixModal').style.display='flex'">🔮 감정 믹스</button>
-                <button id="entryBtn" class="pm-btn" style="flex:1; background:var(--pm-gold); color:black;" disabled onclick="enter()">교실 입장</button>
-            </div>
+            <div style="font-size:12px; color:gold;">[ EMOTION IDENTITY CARD ]</div>
+            <div id="resEmoji" style="font-size:120px; margin:20px 0;">✨</div>
+            <div id="resTags" style="color:#00aaff; font-size:20px; font-weight:bold;">#신분 확인 대기</div>
+            <div id="resDiary" style="color:#ccc; text-align:center; padding: 0 20px;">연금술을 통해 오늘의 성찰을 기록하세요.</div>
+            <button class="pm-btn" style="margin-top:auto; width:100%; height:60px; font-size:20px;" onclick="enterClass()">교실로 전송 및 입장 🚪</button>
         </div>
     </div>
 </div>
 
-<div id="mixModal" class="modal">
-    <div style="background:var(--pm-bg); padding:30px; border:8px ridge var(--pm-dark); text-align:center; width:450px;">
-        <h3 style="margin-top:0;">두 가지 감정을 선택하세요</h3>
-        <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; margin:20px 0;" id="emojiGrid"></div>
-        <div style="font-size:40px; margin-bottom:20px;">
-            <span id="s1">❓</span> + <span id="s2">❓</span>
-        </div>
-        <button class="pm-btn" style="width:100%" onclick="startMix()">연성하기</button>
-    </div>
-</div>
+<div id="mixModal" class="modal"><div class="modal-inner">
+    <h3>🔮 감정 믹서</h3>
+    <input type="text" id="diaryInput" style="width:100%" placeholder="오늘의 기분 성찰...">
+    <div style="margin:10px 0; display:grid; grid-template-columns:repeat(5,1fr); gap:5px;" id="emojiGrid"></div>
+    <button class="pm-btn" style="width:100%" onclick="finishMix()">믹스 완료</button>
+</div></div>
+
+<div id="customModal" class="modal"><div class="modal-inner">
+    <h3>👗 캐릭터 스타일</h3>
+    <button class="pm-btn" onclick="setAvatar('adventurer')">모험가</button>
+    <button class="pm-btn" onclick="setAvatar('pixel-art')">픽셀</button>
+    <button class="pm-btn" onclick="setAvatar('bottts')">로봇</button>
+    <button class="pm-btn" onclick="closeModal('customModal')">닫기</button>
+</div></div>
 
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
+    const firebaseConfig = { /* 동일한 설정 */ apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    const sNum = prompt("출석 번호를 입력하세요 (1~23)", "1");
-    const sName = sNum == "1" ? "강현우" : (sNum == "2" ? "김서연" : sNum + "번 학생");
-    
-    // 성별 기반 3D 전신 캐릭터 설정 (1번 남성, 2번 여성, 나머지는 교차)
-    const gender = (parseInt(sNum) % 2 === 1) ? "male" : "female";
-    document.getElementById('charImg').src = `https://models.readyplayer.me/65829873d328479590892b1a.png?expression=smile&pose=standing&camera=fullbody&gender=${gender}&seed=${sNum}`;
+    let sNum = prompt("번호 입력(1~23)", "1");
+    let sName = sNum=="1"?"강현우": (sNum=="2"?"김서연":sNum+"번 학생");
+    let currentStyle = "adventurer"; let selEmoji = "🔮";
 
-    const emojis = [{e:"😊",c:"1f60a"},{e:"😡",c:"1f621"},{e:"😢",c:"1f622"},{e:"🥰",c:"1f970"},{e:"🤔",c:"1f914"},{e:"🥳",c:"1f973"},{e:"😎",c:"1f60e"},{e:"😴",c:"1f634"},{e:"🔥",c:"1f525"},{e:"🌈",c:"1f308"}];
-    let slot1 = null, slot2 = null, finalImg = "", selQ = "";
-
-    const grid = document.getElementById('emojiGrid');
-    emojis.forEach(i => {
-        let d = document.createElement('div'); d.style.fontSize='30px'; d.style.cursor='pointer'; d.innerText = i.e;
-        d.onclick = () => { if(!slot1 || (slot1 && slot2)) { slot1=i; slot2=null; document.getElementById('s1').innerText=i.e; document.getElementById('s2').innerText="❓"; } else { slot2=i; document.getElementById('s2').innerText=i.e; } };
-        grid.appendChild(d);
-    });
-
-    function startMix() {
-        if(!slot1 || !slot2) return;
-        document.getElementById('mixModal').style.display='none';
-        finalImg = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${slot1.c}/u${slot1.c}_u${slot2.c}.png`;
-        const mImg = document.getElementById('mixImg'); mImg.src = finalUrl = finalImg;
-        
-        // 조언 및 퀘스트 로직
-        let tag = "#평온"; let adv = "현재 마음이 아주 안정적입니다. 이런 날은 친구의 고민을 들어주거나 학급을 위해 봉사하기에 아주 좋습니다!";
-        let quests = ["옆 친구에게 기분 좋은 칭찬 한 줄 건네기", "칠판 주변 깨끗하게 정리하기", "오늘 배울 내용 미리 읽어보기"];
-        
-        if((slot1.e+slot2.e).match(/😡|🔥/)) {
-            tag = "#열정"; adv = "에너지가 매우 뜨겁습니다! <b>이 활력을 긍정적으로 사용하세요.</b> 자칫하면 친구에게 불꽃이 튈 수 있으니 주의가 필요합니다.";
-            quests = ["운동장 크게 한 바퀴 뛰고 오기", "화가 나는 감정을 종이에 적어보기", "친구에게 먼저 웃으며 인사하기"];
-        }
-
-        document.getElementById('resTag').innerText = tag;
-        document.getElementById('adviceText').innerHTML = adv;
-        document.getElementById('qArea').style.display = 'block';
-        const ql = document.getElementById('ql'); ql.innerHTML = "";
-        quests.forEach(q => {
-            let item = document.createElement('div'); item.className='q-item'; item.innerText = q;
-            item.onclick = () => { [...document.querySelectorAll('.q-item')].forEach(v=>v.classList.remove('selected')); item.classList.add('selected'); selQ=q; document.getElementById('entryBtn').disabled=false; };
-            ql.appendChild(item);
-        });
+    function setAvatar(style) { currentStyle = style; document.getElementById('avatarImg').src = `https://api.dicebear.com/7.x/${style}/svg?seed=${sNum}`; }
+    function finishMix() {
+        document.getElementById('resEmoji').innerText = "🔮";
+        document.getElementById('resDiary').innerText = document.getElementById('diaryInput').value;
+        document.getElementById('resTags').innerText = "#성찰_완료";
+        closeModal('mixModal');
     }
-
-    function enter() {
-        // 데이터 전송 (가장 중요: failure 방지를 위해 객체 구조를 확실히 함)
-        db.ref(`room/student${sNum}`).set({
-            num: sNum, name: sName, emojiImg: finalImg, status: "online", 
-            tag: document.getElementById('resTag').innerText, 
-            diary: document.getElementById('diary').value || "성찰 없음",
-            gems: 0, gender: gender
-        });
-        db.ref(`room/student${sNum}/quests`).push({ title: "[감정] " + selQ });
-        location.href = `classroom.html?num=${sNum}`;
+    function enterClass() {
+        db.ref(`room/student${sNum}`).update({
+            num: sNum, name: sName, emoji: "🔮", diary: document.getElementById('resDiary').innerText,
+            style: currentStyle, status: "online", lastUpdate: Date.now()
+        }).then(() => location.href = 'classroom.html?num='+sNum);
     }
-
-    function goAdmin() { if(prompt("비밀번호")==="6500") location.href="admin.html"; }
+    function openModal(id) { document.getElementById(id).style.display='flex'; }
+    function closeModal(id) { document.getElementById(id).style.display='none'; }
+    setAvatar('adventurer');
 </script>
 </body>
 </html>
