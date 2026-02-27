@@ -2,200 +2,203 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 메타인지 감정 데이터 센터</title>
+    <title>6-5 감정 퀘스트 관리국</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @font-face {
-            font-family: 'DungGeunMo';
-            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
-        }
+        @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
         :root { --pm-dark: #3e2723; --pm-gold: #c5a059; --pm-bg: #fdf5e6; }
+        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
         
-        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--pm-dark); overflow: hidden; }
-        .main-window { width: 980px; height: 720px; background: var(--pm-bg); border: 10px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
-        .top-bar { background: linear-gradient(to bottom, #5d4037, #3e2723); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 22px; border-bottom: 4px double var(--pm-gold); }
-        .content { display: flex; flex: 1; padding: 15px; gap: 15px; overflow: hidden; }
+        .pm-window { width: 1024px; height: 768px; background: var(--pm-bg); border: 10px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; }
+        .top-bar { background: linear-gradient(to bottom, #5d4037, #3e2723); color: var(--pm-gold); padding: 10px; text-align: center; font-size: 20px; border-bottom: 4px double var(--pm-gold); }
         
-        /* 왼쪽 상태창 */
-        .status-side { width: 340px; background: #fff9eb; border: 4px double var(--pm-dark); padding: 15px; display: flex; flex-direction: column; }
-        .char-box { width: 100%; height: 220px; background: white; border: 4px inset var(--pm-dark); position: relative; margin-bottom: 10px; display: flex; justify-content: center; align-items: center;}
-        .char-layer { width: 180px; height: 180px; }
+        .main-content { display: flex; flex: 1; padding: 15px; gap: 15px; }
         
-        /* 메타인지 스테이터스 (클릭 가능) */
-        .stat-item { font-size: 13px; margin-bottom: 8px; cursor: pointer; }
-        .bar-bg { background: #444; height: 16px; border: 1px solid var(--pm-gold); margin-top: 3px; position: relative; }
-        .bar-fill { height: 100%; transition: 0.3s; width: 50%; }
+        /* 왼쪽: 3D 아바타 & 육각형 스탯 */
+        .side-panel { width: 320px; background: #fff9eb; border: 4px double var(--pm-dark); padding: 10px; display: flex; flex-direction: column; }
+        .avatar-view { width: 100%; height: 300px; background: #eee; border: 3px inset var(--pm-dark); margin-bottom: 10px; position: relative; }
+        .stat-canvas { width: 100% !important; height: 180px !important; }
+        .advice-box { background: white; border: 2px solid var(--pm-gold); padding: 8px; font-size: 12px; height: 60px; color: #555; margin-top: 5px; }
 
-        /* 오른쪽 메인 창 */
-        .card-main { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        .emotion-card { background: #000; border: 4px double var(--pm-gold); flex: 1; border-radius: 15px; padding: 20px; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; }
-        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; font-size: 16px; margin-top: 5px; }
-        .pm-btn:hover { filter: brightness(1.2); }
-        .pm-btn:active { border-style: inset; }
-
-        /* 팝업 모달 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
-        .modal-body { background: var(--pm-bg); border: 8px ridge var(--pm-dark); padding: 25px; width: 600px; position: relative; }
-        .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; height: 250px; overflow-y: auto; background: white; padding: 10px; border: 3px inset var(--pm-dark); }
-        .selected-box { border: 3px solid var(--pm-gold) !important; background: #fff9eb !important; }
+        /* 중앙: 감정 카드 & 연금술 */
+        .center-panel { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .emotion-card { background: #000; border: 4px double var(--pm-gold); flex: 1; border-radius: 15px; padding: 15px; color: white; position: relative; }
+        
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 8px; cursor: pointer; font-family: inherit; }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; }
+        .modal-inner { background: var(--pm-bg); border: 8px ridge var(--pm-dark); padding: 20px; width: 600px; }
     </style>
 </head>
 <body>
 
-<div class="main-window">
-    <div class="top-bar">6-5 META-COGNITION DATA CENTER</div>
-    <div class="content">
-        <div class="status-side">
-            <h3 style="margin:0 0 10px 0; text-align:center;">오늘의 성찰 상태</h3>
-            <div class="char-box">
-                <img id="avatarBase" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="char-layer">
+<div class="pm-window">
+    <div class="top-bar">6-5 EMOTION QUEST BUREAU - <span id="userTitle">사용자 확인 중...</span></div>
+    <div class="main-content">
+        <div class="side-panel">
+            <div class="avatar-view" id="avatarPreview">
+                <img id="avatarImg" src="" style="width:100%; height:100%; object-fit: contain;">
             </div>
-            
-            <div id="statControls">
-                <div class="stat-item" onclick="updateStat('s1', event)">자기이해 <div class="bar-bg"><div id="s1" class="bar-fill" style="width:50%; background:#ff5252;"></div></div></div>
-                <div class="stat-item" onclick="updateStat('s2', event)">감정조절 <div class="bar-bg"><div id="s2" class="bar-fill" style="width:50%; background:#42a5f5;"></div></div></div>
-                <div class="stat-item" onclick="updateStat('s3', event)">관계지수 <div class="bar-bg"><div id="s3" class="bar-fill" style="width:50%; background:#66bb6a;"></div></div></div>
-                <div class="stat-item" onclick="updateStat('s4', event)">학습의욕 <div class="bar-bg"><div id="s4" class="bar-fill" style="width:50%; background:#ffca28;"></div></div></div>
-                <div class="stat-item" onclick="updateStat('s5', event)">회복탄력 <div class="bar-bg"><div id="s5" class="bar-fill" style="width:50%; background:#ab47bc;"></div></div></div>
-            </div>
-
-            <button class="pm-btn" style="margin-top:10px;" onclick="openModal('kitchenModal')">감정 연금술 열기</button>
-            <button class="pm-btn" style="font-size:12px;" onclick="openModal('customModal')">⚙️ 아바타 스타일 변경</button>
+            <canvas id="radarChart" class="stat-canvas"></canvas>
+            <div class="advice-box" id="adviceText">"자신의 감정을 먼저 들여다보세요."</div>
+            <button class="pm-btn" onclick="openModal('customModal')">👗 아바타 커스텀</button>
+            <button class="pm-btn" style="margin-top:5px;" onclick="openModal('myQuestModal')">🎒 내 퀘스트 보관함</button>
         </div>
 
-        <div class="card-main">
-            <div class="emotion-card">
-                <div style="font-size:12px; color:var(--pm-gold); border-bottom:1px solid #333; padding-bottom:10px;">MY EMOTION REPORT</div>
-                <div id="resEmoji" style="font-size:150px; margin:20px 0;">✨</div>
-                <div id="resDiary" style="color:#ccc; font-size:18px; min-height: 50px;">오늘의 마음을 섞어주세요.</div>
+        <div class="center-panel">
+            <div class="emotion-card" id="finalCard">
+                <div id="cardInfo" style="font-size:14px; color:var(--pm-gold);">[ 학생 정보가 없습니다 ]</div>
+                <div id="resEmoji" style="font-size:120px; margin:10px 0;">✨</div>
+                <div id="resTags" style="color:#00aaff; font-size:18px;">#감정을_선택하세요</div>
+                <div id="resDiary" style="font-size:14px; color:#ccc; margin-top:10px;">...</div>
+                <div id="selectedQuestDisp" style="margin-top:auto; padding:10px; background:#222; border:1px solid var(--pm-gold); display:none;">
+                    🎯 진행 중: <span id="activeQuestName"></span>
+                    <button class="pm-btn" style="font-size:10px;" onclick="reportDone()">다했어요!</button>
+                </div>
             </div>
-            <button class="pm-btn" style="height:70px; font-size:22px; background:var(--pm-gold); color:var(--pm-dark);" onclick="sendData()">교실 전송 및 입장 🚪</button>
+            <div style="display:flex; gap:5px;">
+                <button class="pm-btn" style="flex:1;" onclick="openModal('alchemyModal')">🔮 감정 연금술</button>
+                <button class="pm-btn" style="flex:1; background:var(--pm-gold); color:var(--pm-dark);" onclick="openQuestBoard()">📜 퀘스트 고르기</button>
+            </div>
+            <button class="pm-btn" style="height:50px; font-size:18px;" onclick="enterClassroom()">교실 전송 및 입장</button>
         </div>
-    </div>
-</div>
-
-<div id="kitchenModal" class="modal">
-    <div class="modal-body">
-        <h2 style="text-align:center; margin:0 0 15px 0;">연금술 재료 선택</h2>
-        <div class="emoji-grid" id="pallet"></div>
-        <div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;">
-            <div id="box1" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
-            <span style="font-size:40px;">+</span>
-            <div id="box2" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
-            <span style="font-size:40px;">=</span>
-            <div id="boxRes" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
-        </div>
-        <div id="inputSection" style="display:none;">
-            <input type="text" id="diaryIn" style="width:100%; padding:12px; font-family:inherit; box-sizing:border-box;" placeholder="오늘 마음이 어떤지 한 줄로 적어보세요.">
-            <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="completeAlchemy()">합성 완료</button>
-        </div>
-        <button class="pm-btn" style="position:absolute; top:10px; right:10px;" onclick="closeModal('kitchenModal')">X</button>
     </div>
 </div>
 
 <div id="customModal" class="modal">
-    <div class="modal-body" style="width:300px; text-align:center;">
-        <h3 style="margin-top:0;">아바타 스타일</h3>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-            <button class="pm-btn" onclick="changeAvatar('Felix')">스타일 A</button>
-            <button class="pm-btn" onclick="changeAvatar('Willow')">스타일 B</button>
-            <button class="pm-btn" onclick="changeAvatar('Jack')">스타일 C</button>
-            <button class="pm-btn" onclick="changeAvatar('Aiden')">스타일 D</button>
+    <div class="modal-inner">
+        <h3>캐릭터 커스터마이징</h3>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+            <button class="pm-btn" onclick="updateAvatar('avatar','male')">정장 스타일</button>
+            <button class="pm-btn" onclick="updateAvatar('adventurer','female')">모험가 스타일</button>
+            <button class="pm-btn" onclick="updateAvatar('big-smile','any')">캐주얼 스타일</button>
         </div>
-        <button class="pm-btn" style="width:100%; margin-top:20px; background:#888;" onclick="closeModal('customModal')">닫기</button>
+        <button class="pm-btn" style="width:100%; margin-top:20px;" onclick="closeModal('customModal')">완료</button>
+    </div>
+</div>
+
+<div id="alchemyModal" class="modal">
+    <div class="modal-inner">
+        <h3>감정 연금술 (Mixer)</h3>
+        <div id="emojiGrid" style="display:grid; grid-template-columns:repeat(8,1fr); height:200px; overflow-y:auto; background:white; padding:10px; border:3px inset #ccc;"></div>
+        <div style="text-align:center; font-size:40px; margin:15px 0;">
+            <span id="m1">?</span> + <span id="m2">?</span> = <span id="mRes">?</span>
+        </div>
+        <input type="text" id="diaryIn" style="width:100%; padding:10px; font-family:inherit;" placeholder="지금 내 기분을 한 문장으로 성찰해 보세요.">
+        <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="applyAlchemy()">합성 완료</button>
+    </div>
+</div>
+
+<div id="questBoardModal" class="modal">
+    <div class="modal-inner">
+        <h3>📜 오늘의 추천 감정 퀘스트</h3>
+        <div id="questOptions"></div>
+        <hr>
+        <h3>📢 선생님 발급 미션</h3>
+        <div id="teacherQuestList"></div>
+        <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="closeModal('questBoardModal')">닫기</button>
     </div>
 </div>
 
 <script>
-    // Firebase 초기화 확인
-    const firebaseConfig = {
-        apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
-        authDomain: "secret-quest-class.firebaseapp.com",
-        databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/",
-        projectId: "secret-quest-class",
-        storageBucket: "secret-quest-class.firebasestorage.app",
-        messagingSenderId: "397245266210",
-        appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b"
-    };
-    
+    const firebaseConfig = { /* 이전과 동일한 Firebase 키 */ };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let e1 = "", e2 = "", studentId = prompt("본인의 번호를 입력하세요 (1~23)", "1");
+    let studentNum = prompt("출석 번호를 입력하세요 (1~23)", "1");
+    let studentName = studentNum == "1" ? "강현우" : (studentNum == "2" ? "김서연" : studentNum + "번 학생");
+    let currentEmoji = "✨", currentTags = "", myQuests = [], activeQuest = null;
 
-    // 초기화 함수
-    window.onload = function() {
-        const pallet = document.getElementById('pallet');
-        const emojis = ["😊","😆","🥰","😎","🥳","😌","☁️","🍵","🌱","🌊","💢","😡","😢","😫","🔥","✨","🌈","💎","🍀","⭐","⚽","🎮","🎨","🍕","🍭","🌸","🐱","🐶","🌙","🚀"];
-        
-        emojis.forEach(e => {
-            const btn = document.createElement('button');
-            btn.className = 'pm-btn';
-            btn.style.fontSize = '24px';
-            btn.innerText = e;
-            btn.onclick = () => selectEmoji(e);
-            pallet.appendChild(btn);
-        });
-        
-        updateBoxEffect();
+    // 육각형 차트 초기화
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const radar = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['자아', '감정', '관계', '학습', '회복', '친절'],
+            datasets: [{ data: [50, 50, 50, 50, 50, 50], backgroundColor: 'rgba(197, 160, 89, 0.2)', borderColor: '#c5a059', borderWidth: 2 }]
+        },
+        options: { scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } }
+    });
+
+    window.onload = () => {
+        document.getElementById('userTitle').innerText = `${studentNum}번 ${studentName}`;
+        document.getElementById('cardInfo').innerText = `NO.${studentNum} | NAME: ${studentName}`;
+        updateAvatar('pixel-art', studentNum);
+        initEmojis();
     };
 
-    function selectEmoji(e) {
-        if (!e1 || (e1 && e2)) {
-            e1 = e; e2 = "";
-            document.getElementById('box1').innerText = e1;
-            document.getElementById('box2').innerText = "?";
-            document.getElementById('boxRes').innerText = "?";
-            document.getElementById('inputSection').style.display = 'none';
-        } else {
-            e2 = e;
-            document.getElementById('box2').innerText = e2;
-            document.getElementById('boxRes').innerText = "🔮";
-            document.getElementById('inputSection').style.display = 'block';
+    function initEmojis() {
+        const grid = document.getElementById('emojiGrid');
+        const list = ["😊","😡","😢","😎","🥳","😌","🔥","🌈","🍵","🧊","⭐","🍀","🎈","🎨","🎮"];
+        list.forEach(e => {
+            let b = document.createElement('button'); b.className='pm-btn'; b.innerText=e;
+            b.onclick = () => mix(e);
+            grid.appendChild(b);
+        });
+    }
+
+    let e1 = "", e2 = "";
+    function mix(e) {
+        if(!e1 || (e1 && e2)) { e1=e; e2=""; document.getElementById('m1').innerText=e1; document.getElementById('m2').innerText="?"; }
+        else { 
+            e2=e; document.getElementById('m2').innerText=e2; 
+            currentEmoji = "🔮"; // 실제 믹스 로직 대신 우선 구슬로 표시
+            document.getElementById('mRes').innerText = currentEmoji;
+            updateAdvice(e1, e2);
         }
-        updateBoxEffect();
     }
 
-    function updateBoxEffect() {
-        document.getElementById('box1').classList.toggle('selected-box', !e1 || (e1 && e2));
-        document.getElementById('box2').classList.toggle('selected-box', e1 && !e2);
+    function updateAdvice(a, b) {
+        const advices = { "😡": "화가 날 땐 심호흡을 3번 해보세요.", "😢": "슬픔은 나누면 반이 됩니다. 친구에게 말을 건네볼까요?" };
+        document.getElementById('adviceText').innerText = advices[a] || advices[b] || "안정적인 감정 상태입니다. 멋진 하루를 보내세요!";
     }
 
-    function updateStat(id, event) {
-        const bar = document.getElementById(id);
-        const rect = event.currentTarget.getBoundingClientRect();
-        const offsetX = event.clientX - rect.left;
-        const percentage = Math.max(10, Math.min(100, (offsetX / rect.width) * 100));
-        bar.style.width = percentage + "%";
+    function openQuestBoard() {
+        openModal('questBoardModal');
+        const opt = document.getElementById('questOptions');
+        opt.innerHTML = "";
+        const qList = ["거울 보고 웃어주기", "친구에게 고마운 점 말하기", "선생님과 하이파이브 하기"];
+        qList.forEach(q => {
+            let b = document.createElement('button'); b.className='pm-btn'; b.style.width="100%"; b.style.margin="3px";
+            b.innerText = q;
+            b.onclick = () => { activeQuest = q; alert("퀘스트 수령!"); closeModal('questBoardModal'); refreshQuest(); };
+            opt.appendChild(b);
+        });
     }
 
-    function completeAlchemy() {
-        document.getElementById('resEmoji').innerText = "🔮";
-        document.getElementById('resDiary').innerText = document.getElementById('diaryIn').value || "오늘도 화이팅!";
-        closeModal('kitchenModal');
+    function refreshQuest() {
+        if(activeQuest) {
+            document.getElementById('selectedQuestDisp').style.display = 'block';
+            document.getElementById('activeQuestName').innerText = activeQuest;
+        }
+    }
+
+    function reportDone() {
+        if(confirm("정말 다 하셨나요? 선생님께 확인 요청을 보냅니다.")) {
+            db.ref(`room/student${studentNum}/questStatus`).set("request");
+            alert("요청 보냄! 선생님의 승인을 기다리세요.");
+        }
+    }
+
+    function updateAvatar(type, seed) {
+        document.getElementById('avatarImg').src = `https://api.dicebear.com/7.x/${type}/svg?seed=${seed}`;
+    }
+
+    function applyAlchemy() {
+        document.getElementById('resEmoji').innerText = currentEmoji;
+        document.getElementById('resDiary').innerText = document.getElementById('diaryIn').value;
+        closeModal('alchemyModal');
     }
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function changeAvatar(s) { document.getElementById('avatarBase').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`; }
-
-    function sendData() {
-        const diary = document.getElementById('resDiary').innerText;
-        if(diary === "오늘의 마음을 섞어주세요.") return alert("먼저 감정 연금술을 완료해주세요!");
-
-        db.ref('room/student' + studentId).set({
-            num: studentId,
-            name: studentId + "번 학생",
-            emoji: document.getElementById('resEmoji').innerText,
-            diary: diary,
-            s1: document.getElementById('s1').style.width,
-            s2: document.getElementById('s2').style.width,
-            status: "online"
-        }).then(() => {
-            alert("전송 완료! 교실로 이동합니다.");
-            location.href = "classroom.html";
-        }).catch(e => alert("오류 발생: " + e.message));
+    function enterClassroom() {
+        db.ref(`room/student${studentNum}`).update({
+            num: studentNum, name: studentName, emoji: currentEmoji,
+            diary: document.getElementById('resDiary').innerText,
+            quest: activeQuest, status: "online"
+        }).then(() => location.href="classroom.html");
     }
 </script>
 </body>
