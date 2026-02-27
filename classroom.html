@@ -7,38 +7,45 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        body { background:#222; font-family:'DungGeunMo'; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; }
-        .pm-window { width:1000px; height:700px; background:#fdf5e6; border:12px ridge #3e2723; display:flex; flex-direction:column; }
-        .classroom-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; padding:20px; flex:1; background:#ead7b1; border:5px inset #3e2723; margin:10px; }
-        .desk { background:#3e2723; border:2px solid #555; height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#555; }
-        /* 불 들어온 책상 */
-        .desk.online { background:#fff !important; border:3px solid gold !important; color:#000 !important; box-shadow: 0 0 15px white; }
-        .desk img { width:40px; display:none; }
-        .desk.online img { display:block; }
+        body { margin:0; background:#1a1a1a; font-family:'DungGeunMo'; display:flex; justify-content:center; align-items:center; height:100vh; }
+        .pm-window { width:1024px; height:720px; background:#ead7b1; border:12px ridge #2d1b15; position:relative; display:flex; flex-direction:column; }
+        .classroom-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; padding:25px; flex:1; overflow-y:auto; }
+        
+        .desk { background:#2d1b15; border:3px solid #444; height:120px; position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#555; transition:0.3s; }
+        /* 입장 시 불 켜짐 효과 */
+        .desk.online { background:#fff !important; border:4px solid gold !important; color:#000 !important; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
+        .desk .avatar-mini { width:50px; height:70px; display:none; }
+        .desk.online .avatar-mini { display:block; }
+        .desk .emoji-badge { position:absolute; bottom:5px; right:5px; width:30px; }
+        .top-info { background:#2d1b15; color:#e6b31e; padding:10px; text-align:center; font-size:20px; }
     </style>
 </head>
 <body>
 <div class="pm-window">
-    <div id="deskGrid" class="classroom-grid"></div>
+    <div class="top-info">🏫 6학년 5반 실시간 교실 현황 🏫</div>
+    <div id="grid" class="classroom-grid"></div>
 </div>
 <script>
     const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    const grid = document.getElementById('deskGrid');
+    const grid = document.getElementById('grid');
     for(let i=1; i<=23; i++) {
         let d = document.createElement('div'); d.className='desk'; d.id=`desk-${i}`;
-        d.innerHTML = `No.${i}`; grid.appendChild(d);
+        d.innerHTML = `No.${i}<br>부재중`; grid.appendChild(d);
     }
 
-    // 데이터가 바뀔 때마다 실시간으로 불 켜기
     db.ref('room/').on('value', snap => {
-        snap.forEach(child => {
-            const s = child.val();
+        snap.forEach(c => {
+            const s = c.val();
             const desk = document.getElementById(`desk-${s.num}`);
-            if(desk && s.status === "online") {
+            if(desk && s.status === 'online') {
                 desk.className = 'desk online';
-                desk.innerHTML = `<img src="${s.emojiImg}"><b>${s.num}번</b>`;
+                desk.innerHTML = `
+                    <img class="avatar-mini" src="https://models.readyplayer.me/65829873d328479590892b1a.png?expression=smile&pose=standing&camera=fullbody&gender=${s.gender}&seed=${s.num}">
+                    <img class="emoji-badge" src="${s.emojiImg}">
+                    <div style="font-size:14px; font-weight:bold;">${s.name}</div>
+                `;
             }
         });
     });
