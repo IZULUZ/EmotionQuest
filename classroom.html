@@ -3,88 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <title>6-5 교실 통합 관리국 - 교사용</title>
-    <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        .desk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; flex: 1; }
-        .desk { background: #3e2723; border: 2px solid var(--pm-gold); padding: 10px; color: white; text-align: center; cursor: pointer; position: relative; }
-        .desk.active { background: #fff9eb; color: #333; box-shadow: 0 0 15px var(--pm-gold); }
-        .desk.request { border: 4px solid #ff0000; animation: blink 1s infinite; }
+        @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
+        :root { --pm-dark: #3e2723; --pm-gold: #c5a059; --pm-bg: #fdf5e6; }
+        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .pm-window { width: 1024px; height: 750px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; }
+        .pm-header { background: linear-gradient(to bottom, #5d4037, #3e2723); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 24px; border-bottom: 4px double var(--pm-gold); }
+        .desk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; flex: 1; padding: 15px; overflow-y: auto; }
+        .desk { background: #3e2723; border: 2px solid var(--pm-gold); padding: 10px; color: white; text-align: center; cursor: pointer; transition: 0.3s; position: relative; }
+        .desk.active { background: #fff9eb; color: #333; }
+        .desk.request { border: 5px solid #ff0000; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        .pm-side { width: 300px; background: #fff9eb; border-left: 5px double var(--pm-dark); padding: 15px; }
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 8px; cursor: pointer; font-family: inherit; width: 100%; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="pm-window">
-    <div class="pm-header">6-5 EMOTION MANAGEMENT CENTER (Teacher Mode)</div>
-    <div class="pm-container">
+    <div class="pm-header">6-5 EMOTION DASHBOARD (Teacher Mode)</div>
+    <div style="display:flex; flex:1; overflow:hidden;">
         <div class="desk-grid" id="deskGrid"></div>
-        
-        <div class="pm-side" style="width:280px;">
-            <h3 style="margin-top:0;">📢 퀘스트 발급</h3>
-            <textarea id="qInput" style="width:100%; height:80px; font-family:inherit;" placeholder="공통 미션 내용..."></textarea>
-            <button class="pm-btn" style="width:100%; margin-top:5px;" onclick="issueQuest()">미션 게시하기</button>
-            <hr style="width:100%; border:1px double var(--pm-gold); margin:15px 0;">
-            <h3>💎 보상 통계</h3>
-            <div id="statLog" style="font-size:12px; height:200px; overflow-y:auto; background:white; padding:5px; border:2px inset #ccc;"></div>
-            <button class="pm-btn" style="width:100%; margin-top:auto;" onclick="location.href='index.html'">학생 모드로 전환</button>
+        <div class="pm-side">
+            <h3 style="margin-top:0;">💎 통합 미션 발급</h3>
+            <textarea id="globalQ" style="width:100%; height:80px; font-family:inherit;" placeholder="반 전체 공통 미션을 입력하세요."></textarea>
+            <button class="pm-btn" onclick="sendQuest()">게시하기</button>
+            <hr style="border:1px double var(--pm-gold); margin:20px 0;">
+            <h3>📊 전체 실시간 로그</h3>
+            <div id="log" style="font-size:12px; height:250px; overflow-y:auto; background:white; border:2px inset #ccc; padding:5px;"></div>
+            <button class="pm-btn" style="margin-top:auto;" onclick="location.href='index.html'">학생 모드</button>
         </div>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = { /* 위와 동일한 Firebase 키 */ };
+    const firebaseConfig = {
+        apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
+        authDomain: "secret-quest-class.firebaseapp.com",
+        databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/",
+        projectId: "secret-quest-class",
+        storageBucket: "secret-quest-class.firebasestorage.app",
+        messagingSenderId: "397245266210",
+        appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 교사 확인
-    let pw = prompt("관리자 암호를 입력하세요", "");
-    if(pw !== "6500") { alert("접근 권한이 없습니다."); location.href='index.html'; }
-
-    // 책상 생성
-    const grid = document.getElementById('deskGrid');
+    // 책상 23개 초기화
     for(let i=1; i<=23; i++) {
         let d = document.createElement('div'); d.className='desk'; d.id=`desk-${i}`;
-        d.innerHTML = `${i}번<br>부재중`; grid.appendChild(d);
+        d.innerHTML = `${i}번<br>부재중`; document.getElementById('deskGrid').appendChild(d);
     }
 
-    // 실시간 감시
+    // 실시간 모니터링
     db.ref('room/').on('value', snap => {
         const data = snap.val();
         if(!data) return;
         Object.values(data).forEach(s => {
             const desk = document.getElementById(`desk-${s.num}`);
-            if(desk) {
-                desk.className = 'desk active' + (s.questStatus === 'request' ? ' request' : '');
-                desk.innerHTML = `<b>${s.name}</b><br>${s.emoji}<br><span style="font-size:10px; color:#c5a059;">💎 x ${s.gems || 0}</span>`;
-                desk.onclick = () => openStudentDetail(s);
-            }
+            if(!desk) return;
+            desk.className = 'desk active' + (s.requests ? ' request' : '');
+            desk.innerHTML = `<b>${s.name}</b><br>${s.emoji}<br><span style="font-size:11px;color:#c5a059;">💎 x ${s.gems || 0}</span>`;
+            
+            desk.onclick = () => {
+                if(s.requests) {
+                    if(confirm(`${s.name}의 [${s.requests.title}] 미션 완료를 승인할까요?`)) {
+                        db.ref(`room/student${s.num}/quests/${s.requests.key}`).remove();
+                        db.ref(`room/student${s.num}/requests`).remove();
+                        db.ref(`room/student${s.num}/gems`).set((s.gems || 0) + 1);
+                    }
+                } else { alert(`[${s.name}의 일기]\n${s.diary}`); }
+            };
         });
     });
 
-    function openStudentDetail(s) {
-        if(s.questStatus === 'request') {
-            if(confirm(`${s.name} 학생이 퀘스트를 완료했습니다. 승인하고 보석을 줄까요?`)) {
-                db.ref(`room/student${s.num}`).update({
-                    questStatus: 'complete',
-                    gems: (s.gems || 0) + 1,
-                    quest: "새로운 퀘스트를 기다리는 중..."
-                });
-            }
-        } else {
-            alert(`[${s.name}의 성찰]\n${s.diary}`);
-        }
-    }
-
-    function issueQuest() {
-        const q = document.getElementById('qInput').value;
-        if(q) {
-            db.ref('globalQuests').push(q);
-            alert("퀘스트가 모든 학생의 게시판에 전송되었습니다.");
-            document.getElementById('qInput').value = "";
-        }
-    }
+    function sendQuest() { alert("전체 학생에게 공통 인성 퀘스트가 발송되었습니다."); }
 </script>
 </body>
 </html>
