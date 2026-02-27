@@ -2,102 +2,84 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 관리자 센터</title>
+    <title>6-5 관리자</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        :root { --pm-dark: #1a0f0d; --pm-gold: #e6b31e; --pm-bg: #fdf5e6; }
-        body { margin: 0; background: #000; font-family: 'DungGeunMo', sans-serif; }
-        .admin-window { width: 1200px; height: 850px; margin: 20px auto; background: var(--pm-bg); border: 12px ridge var(--pm-dark); display: flex; flex-direction: column; }
-        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 15px; text-align: center; font-size: 26px; border-bottom: 5px double var(--pm-gold); }
-        .layout { display: flex; flex: 1; overflow: hidden; }
-        .main-grid { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; padding: 20px; background: #ead7b1; overflow-y: auto; }
-        .sidebar { width: 350px; background: #fff; border-left: 6px double var(--pm-dark); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .desk { background: #2d1b15; border: 3px solid #444; height: 160px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; transition: 0.3s; }
-        .desk.online { background: #fff !important; color: #000 !important; border: 3px solid var(--pm-gold) !important; }
-        .desk.pending { border: 5px solid #ff5252 !important; animation: blink 1s infinite; cursor: pointer; z-index: 10; transform: scale(1.02); }
-        @keyframes blink { 50% { opacity: 0.7; border-color: transparent; } }
-        .avatar { width: 60px; height: 80px; object-fit: contain; }
-        .gem-mini { width: 18px; vertical-align: middle; }
-        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; width: 100%; }
-        input, select { padding: 8px; font-family: inherit; margin-bottom: 10px; border: 2px solid #ccc; width: 100%; box-sizing: border-box; }
+        body { font-family:sans-serif; padding:20px; background:#f4f4f4; }
+        .section { background:white; padding:20px; margin-bottom:20px; border:1px solid #ddd; }
+        .quest-list { list-style:none; padding:0; }
+        .quest-item { background:#eee; padding:10px; margin-bottom:5px; display:flex; justify-content:space-between; }
     </style>
 </head>
 <body>
-<div class="admin-window">
-    <div class="header">🛡️ 6-5 인성 퀘스트 및 보석 관리</div>
-    <div class="layout">
-        <div class="main-grid" id="adminGrid"></div>
-        <div class="sidebar">
-            <h3 style="margin:0;">📜 퀘스트 발급</h3>
-            <input type="text" id="qTitle" placeholder="퀘스트 내용 입력">
-            <select id="qGemType">
-                <option value="respect">존중 (하늘색 보석)</option>
-                <option value="care">배려 (주황색 보석)</option>
-                <option value="love">사랑 (분홍색 보석)</option>
-            </select>
-            <input type="number" id="qAmount" value="1" min="1" max="5">
-            <button class="pm-btn" onclick="createQuest()">게시판 등록</button>
-            <hr style="width:100%;">
-            <h3>📋 시스템 로그</h3>
-            <div id="adminLog" style="flex:1; background:#f0f0f0; padding:10px; font-size:12px; overflow-y:auto; border:2px inset #fff;"></div>
-        </div>
+    <h2>⚙️ 교사 관리 시스템 (PW: 1234)</h2>
+
+    <div class="section">
+        <h3>게시판 퀘스트 관리 (기본 3종 포함)</h3>
+        <ul id="boardQuests" class="quest-list"></ul>
+        <input type="text" id="newQ" placeholder="퀘스트 내용">
+        <select id="newT"><option>배려</option><option>존중</option><option>사랑</option></select>
+        <button onclick="addBoardQuest()">추가</button>
     </div>
-</div>
+
+    <div class="section">
+        <h3>학생 완료 승인</h3>
+        <div id="requests"></div>
+    </div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
     firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    const grid = document.getElementById('adminGrid');
-    for(let i=1; i<=23; i++) {
-        let d = document.createElement('div'); d.className='desk'; d.id=`admin-desk-${i}`;
-        d.innerHTML = `No.${i}<br>입장 대기`; grid.appendChild(d);
-    }
+    // 초기 기본 퀘스트 세팅 (데이터가 없을 때만)
+    db.ref('board/quests').once('value', s => {
+        if(!s.exists()) {
+            const basic = [
+                {title:"친구의 말을 끝까지 들어주기", type:"존중"},
+                {title:"우유 상자 정리 도와주기", type:"배려"},
+                {title:"자기 자신에게 칭찬 한마디 하기", type:"사랑"}
+            ];
+            basic.forEach(q => db.ref('board/quests').push(q));
+        }
+    });
 
-    db.ref('room/').on('value', snap => {
+    db.ref('board/quests').on('value', snap => {
+        const l = document.getElementById('boardQuests'); l.innerHTML="";
         snap.forEach(c => {
-            const s = c.val();
-            const desk = document.getElementById(`admin-desk-${s.num}`);
-            if(!desk) return;
-            desk.className = 'desk online' + (s.requestDone ? ' pending' : '');
-            desk.innerHTML = `
-                <div style="position:absolute; top:5px; left:5px; font-size:12px;">💎${(s.gems?.respect||0)+(s.gems?.care||0)+(s.gems?.love||0)}</div>
-                <img class="avatar" src="https://models.readyplayer.me/65829873d328479590892b1a.png?camera=fullbody&gender=${s.gender}&seed=${s.num}">
-                <div style="font-weight:bold; font-size:14px;">${s.num}번 ${s.tags ? '#'+s.tags[0] : ''}</div>
-                ${s.requestDone ? '<div style="background:red; color:white; font-size:11px; padding:2px;">승인대기</div>' : ''}
-            `;
-            desk.onclick = () => { if(s.requestDone) approveQuest(s); else alert(`[성찰]\n${s.diary}`); };
+            l.innerHTML += `<li class="quest-item">${c.val().title} [${c.val().type}] <button onclick="delQuest('${c.key}')">삭제</button></li>`;
         });
     });
 
-    function createQuest() {
-        const title = document.getElementById('qTitle').value;
-        const type = document.getElementById('qGemType').value;
-        const amount = parseInt(document.getElementById('qAmount').value);
-        if(!title) return;
-        db.ref('globalQuests').push({ title, rewardType: type, rewardAmount: amount, type: 'personality' });
-        document.getElementById('qTitle').value = "";
-        addLog(`📣 퀘스트 발동: ${title}`);
-    }
-
-    function approveQuest(student) {
-        const req = student.requestDone;
-        db.ref(`room/student${student.num}/myQuests/${req.key}`).once('value', qSnap => {
-            const q = qSnap.val();
-            if(confirm(`[${student.num}번] 승인하시겠습니까?\n내용: ${q.title}\n보상: ${q.rewardType} ${q.rewardAmount}개`)) {
-                let current = student.gems?.[q.rewardType] || 0;
-                db.ref(`room/student${student.num}/gems/${q.rewardType}`).set(current + q.rewardAmount);
-                db.ref(`room/student${student.num}/recentReward`).set({ type: q.rewardType, amount: q.rewardAmount, time: Date.now() });
-                db.ref(`room/student${student.num}/myQuests/${req.key}`).remove();
-                db.ref(`room/student${student.num}/requestDone`).remove();
-                addLog(`✅ ${student.num}번 승인완료`);
+    db.ref('room/').on('value', snap => {
+        const r = document.getElementById('requests'); r.innerHTML="";
+        snap.forEach(c => {
+            const s = c.val();
+            if(s.requestDone) {
+                r.innerHTML += `<div>${s.num}번 학생 승인 요청! <button onclick="approve('${s.num}')">승인</button></div>`;
             }
         });
-    }
+    });
 
-    function addLog(m) { const l=document.getElementById('adminLog'); l.innerHTML=`<div>> ${m}</div>`+l.innerHTML; }
+    function addBoardQuest() {
+        const t = document.getElementById('newQ').value;
+        const ty = document.getElementById('newT').value;
+        if(t) db.ref('board/quests').push({title:t, type:ty});
+    }
+    function delQuest(k) { db.ref(`board/quests/${k}`).remove(); }
+    function approve(n) {
+        db.ref(`room/student${n}`).once('value', snap => {
+            const s = snap.val(); const k = s.requestDone.key;
+            db.ref(`room/student${n}/myQuests/${k}`).once('value', qSnap => {
+                const q = qSnap.val();
+                let cur = s.gems?.[q.type] || 0;
+                db.ref(`room/student${n}/gems/${q.type}`).set(cur + 1);
+                db.ref(`room/student${n}/requestDone`).remove();
+                db.ref(`room/student${n}/myQuests/${k}`).remove();
+                alert("보석 지급 완료!");
+            });
+        });
+    }
 </script>
 </body>
 </html>
