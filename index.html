@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>6-5 메타인지 감정 데이터 센터</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         @font-face {
             font-family: 'DungGeunMo';
@@ -10,75 +12,83 @@
         }
         :root { --pm-dark: #3e2723; --pm-gold: #c5a059; --pm-bg: #fdf5e6; }
         
-        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--pm-dark); }
+        body { margin: 0; background: #1a1a1a; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--pm-dark); overflow: hidden; }
         .main-window { width: 980px; height: 720px; background: var(--pm-bg); border: 10px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
         .top-bar { background: linear-gradient(to bottom, #5d4037, #3e2723); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 22px; border-bottom: 4px double var(--pm-gold); }
         .content { display: flex; flex: 1; padding: 15px; gap: 15px; overflow: hidden; }
         
-        /* 왼쪽: 메타인지 스테이터스 패널 */
-        .status-side { width: 320px; background: #fff9eb; border: 4px double var(--pm-dark); padding: 15px; display: flex; flex-direction: column; }
-        .char-box { width: 100%; height: 250px; background: white; border: 4px inset var(--pm-dark); position: relative; margin-bottom: 10px; }
-        .char-layer { position: absolute; width: 100%; height: 100%; top: 0; left: 0; }
+        /* 왼쪽 상태창 */
+        .status-side { width: 340px; background: #fff9eb; border: 4px double var(--pm-dark); padding: 15px; display: flex; flex-direction: column; }
+        .char-box { width: 100%; height: 220px; background: white; border: 4px inset var(--pm-dark); position: relative; margin-bottom: 10px; display: flex; justify-content: center; align-items: center;}
+        .char-layer { width: 180px; height: 180px; }
         
-        /* 세분화된 스테이터스 바 */
-        .stat-item { font-size: 13px; margin-bottom: 8px; }
-        .bar-bg { background: #444; height: 12px; border: 1px solid var(--pm-gold); margin-top: 3px; position: relative; }
-        .bar-fill { height: 100%; transition: 0.5s; width: 50%; }
-        
+        /* 메타인지 스테이터스 (클릭 가능) */
+        .stat-item { font-size: 13px; margin-bottom: 8px; cursor: pointer; }
+        .bar-bg { background: #444; height: 16px; border: 1px solid var(--pm-gold); margin-top: 3px; position: relative; }
+        .bar-fill { height: 100%; transition: 0.3s; width: 50%; }
+
+        /* 오른쪽 메인 창 */
         .card-main { flex: 1; display: flex; flex-direction: column; gap: 10px; }
-        .emotion-card { background: #000; border: 4px double var(--pm-gold); flex: 1; border-radius: 15px; padding: 20px; color: white; text-align: center; }
+        .emotion-card { background: #000; border: 4px double var(--pm-gold); flex: 1; border-radius: 15px; padding: 20px; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; font-size: 16px; margin-top: 5px; }
+        .pm-btn:hover { filter: brightness(1.2); }
         .pm-btn:active { border-style: inset; }
 
+        /* 팝업 모달 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
         .modal-body { background: var(--pm-bg); border: 8px ridge var(--pm-dark); padding: 25px; width: 600px; position: relative; }
-        .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; height: 220px; overflow-y: auto; background: white; padding: 10px; border: 3px inset var(--pm-dark); }
+        .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; height: 250px; overflow-y: auto; background: white; padding: 10px; border: 3px inset var(--pm-dark); }
+        .selected-box { border: 3px solid var(--pm-gold) !important; background: #fff9eb !important; }
     </style>
 </head>
 <body>
 
 <div class="main-window">
-    <div class="top-bar">META-COGNITION EMOTION STATUS</div>
-    
+    <div class="top-bar">6-5 META-COGNITION DATA CENTER</div>
     <div class="content">
         <div class="status-side">
-            <h3 id="displayName" style="margin:0 0 10px 0; text-align:center;">6-5 홍길동</h3>
+            <h3 style="margin:0 0 10px 0; text-align:center;">오늘의 성찰 상태</h3>
             <div class="char-box">
                 <img id="avatarBase" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="char-layer">
             </div>
             
-            <div class="stat-item">자기이해 (Self-Awareness) <div class="bar-bg"><div class="bar-fill" style="width:80%; background:#ff5252;"></div></div></div>
-            <div class="stat-item">감정조절 (Self-Regulation) <div class="bar-bg"><div class="bar-fill" style="width:45%; background:#42a5f5;"></div></div></div>
-            <div class="stat-item">관계지수 (Social Skill) <div class="bar-bg"><div class="bar-fill" style="width:60%; background:#66bb6a;"></div></div></div>
-            <div class="stat-item">학습의욕 (Motivation) <div class="bar-bg"><div class="bar-fill" style="width:30%; background:#ffca28;"></div></div></div>
-            <div class="stat-item">회복탄력 (Resilience) <div class="bar-bg"><div class="bar-fill" style="width:55%; background:#ab47bc;"></div></div></div>
+            <div id="statControls">
+                <div class="stat-item" onclick="updateStat('s1', event)">자기이해 <div class="bar-bg"><div id="s1" class="bar-fill" style="width:50%; background:#ff5252;"></div></div></div>
+                <div class="stat-item" onclick="updateStat('s2', event)">감정조절 <div class="bar-bg"><div id="s2" class="bar-fill" style="width:50%; background:#42a5f5;"></div></div></div>
+                <div class="stat-item" onclick="updateStat('s3', event)">관계지수 <div class="bar-bg"><div id="s3" class="bar-fill" style="width:50%; background:#66bb6a;"></div></div></div>
+                <div class="stat-item" onclick="updateStat('s4', event)">학습의욕 <div class="bar-bg"><div id="s4" class="bar-fill" style="width:50%; background:#ffca28;"></div></div></div>
+                <div class="stat-item" onclick="updateStat('s5', event)">회복탄력 <div class="bar-bg"><div id="s5" class="bar-fill" style="width:50%; background:#ab47bc;"></div></div></div>
+            </div>
 
-            <button class="pm-btn" style="margin-top:10px;" onclick="openModal('kitchenModal')">감정 연금술 도구함</button>
-            <button class="pm-btn" style="font-size:12px;" onclick="openModal('customModal')">⚙️ 아바타 설정</button>
+            <button class="pm-btn" style="margin-top:10px;" onclick="openModal('kitchenModal')">감정 연금술 열기</button>
+            <button class="pm-btn" style="font-size:12px;" onclick="openModal('customModal')">⚙️ 아바타 스타일 변경</button>
         </div>
 
         <div class="card-main">
             <div class="emotion-card">
-                <div style="font-size:12px; color:var(--pm-gold);">[ 오늘의 감정 리포트 ]</div>
-                <div id="resEmoji" style="font-size:150px; margin:30px 0;">✨</div>
-                <div id="resTags" style="color:#00aaff; font-size:24px; font-weight:bold;">#내_마음의_상태</div>
-                <div id="resDiary" style="color:#ccc; border-top:1px solid #333; padding-top:20px;">일기를 쓰면 이곳에 기록됩니다.</div>
+                <div style="font-size:12px; color:var(--pm-gold); border-bottom:1px solid #333; padding-bottom:10px;">MY EMOTION REPORT</div>
+                <div id="resEmoji" style="font-size:150px; margin:20px 0;">✨</div>
+                <div id="resDiary" style="color:#ccc; font-size:18px; min-height: 50px;">오늘의 마음을 섞어주세요.</div>
             </div>
-            <button class="pm-btn" style="height:65px; font-size:20px; background:#c5a059; color:#3e2723;" onclick="sendToClass()">데이터 전송 및 교실 입장</button>
+            <button class="pm-btn" style="height:70px; font-size:22px; background:var(--pm-gold); color:var(--pm-dark);" onclick="sendData()">교실 전송 및 입장 🚪</button>
         </div>
     </div>
 </div>
 
 <div id="kitchenModal" class="modal">
     <div class="modal-body">
-        <h2 style="text-align:center; margin-top:0;">EMOJI MIXER</h2>
+        <h2 style="text-align:center; margin:0 0 15px 0;">연금술 재료 선택</h2>
         <div class="emoji-grid" id="pallet"></div>
-        <div style="display:flex; justify-content:space-around; align-items:center; font-size:50px; background:white; margin:15px 0; padding:15px; border:3px inset #ccc;">
-            <span id="f1">?</span> <span>+</span> <span id="f2">?</span> <span>=</span> <span id="fRes">?</span>
+        <div style="display:flex; justify-content:space-around; align-items:center; margin:20px 0;">
+            <div id="box1" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
+            <span style="font-size:40px;">+</span>
+            <div id="box2" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
+            <span style="font-size:40px;">=</span>
+            <div id="boxRes" style="width:80px; height:80px; background:white; border:3px inset #ccc; font-size:50px; display:flex; justify-content:center; align-items:center;">?</div>
         </div>
-        <div id="meta" style="display:none;">
-            <input type="text" id="diaryIn" style="width:100%; padding:12px; font-family:inherit; margin-bottom:10px;" placeholder="오늘 나의 기분을 한 문장으로 성찰해보세요.">
-            <button class="pm-btn" style="width:100%;" onclick="confirmMix()">성찰 완료</button>
+        <div id="inputSection" style="display:none;">
+            <input type="text" id="diaryIn" style="width:100%; padding:12px; font-family:inherit; box-sizing:border-box;" placeholder="오늘 마음이 어떤지 한 줄로 적어보세요.">
+            <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="completeAlchemy()">합성 완료</button>
         </div>
         <button class="pm-btn" style="position:absolute; top:10px; right:10px;" onclick="closeModal('kitchenModal')">X</button>
     </div>
@@ -86,18 +96,19 @@
 
 <div id="customModal" class="modal">
     <div class="modal-body" style="width:300px; text-align:center;">
-        <h3>캐릭터 스타일</h3>
-        <button class="pm-btn" onclick="changeAvatar('Oliver')">스타일 1</button>
-        <button class="pm-btn" onclick="changeAvatar('Willow')">스타일 2</button>
-        <button class="pm-btn" onclick="changeAvatar('Jack')">스타일 3</button>
+        <h3 style="margin-top:0;">아바타 스타일</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <button class="pm-btn" onclick="changeAvatar('Felix')">스타일 A</button>
+            <button class="pm-btn" onclick="changeAvatar('Willow')">스타일 B</button>
+            <button class="pm-btn" onclick="changeAvatar('Jack')">스타일 C</button>
+            <button class="pm-btn" onclick="changeAvatar('Aiden')">스타일 D</button>
+        </div>
         <button class="pm-btn" style="width:100%; margin-top:20px; background:#888;" onclick="closeModal('customModal')">닫기</button>
     </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <script>
-    // 파이어베이스 설정값 (누락되었던 키값 포함)
+    // Firebase 초기화 확인
     const firebaseConfig = {
         apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
         authDomain: "secret-quest-class.firebaseapp.com",
@@ -107,48 +118,85 @@
         messagingSenderId: "397245266210",
         appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b"
     };
+    
     firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
+    const db = firebase.database();
 
-    let e1 = "", e2 = "", curId = 1;
-    // 50개 이상의 이모지
-    const emojis = ["😊","😆","🥰","😎","🥳","😌","☁️","🍵","🌱","🌊","💢","😡","😢","😫","🔥","✨","🌈","💎","🎈","🎨","🍕","🎮","🐶","🐱","🌙","🌸","🍀","⭐","⚽","🚀","🍩","🧁","🍭","🥨","🎬","🎧","🧩","🧸","🧁","🥂","🧩","💌","🪐","🌻","🧊","🎻","🎹","🚲","🏠","🚩"];
+    let e1 = "", e2 = "", studentId = prompt("본인의 번호를 입력하세요 (1~23)", "1");
 
-    function init() {
-        const pal = document.getElementById('pallet');
+    // 초기화 함수
+    window.onload = function() {
+        const pallet = document.getElementById('pallet');
+        const emojis = ["😊","😆","🥰","😎","🥳","😌","☁️","🍵","🌱","🌊","💢","😡","😢","😫","🔥","✨","🌈","💎","🍀","⭐","⚽","🎮","🎨","🍕","🍭","🌸","🐱","🐶","🌙","🚀"];
+        
         emojis.forEach(e => {
-            const b = document.createElement('button'); b.className='pm-btn'; b.style.fontSize='25px'; b.innerText=e;
-            b.onclick=()=> {
-                if(!e1 || (e1 && e2)) { e1=e; e2=""; document.getElementById('f1').innerText=e; document.getElementById('f2').innerText="?"; document.getElementById('fRes').innerText="?"; document.getElementById('meta').style.display='none'; }
-                else { e2=e; document.getElementById('f2').innerText=e; document.getElementById('fRes').innerText="🔮"; document.getElementById('meta').style.display='block'; }
-            };
-            pal.appendChild(b);
+            const btn = document.createElement('button');
+            btn.className = 'pm-btn';
+            btn.style.fontSize = '24px';
+            btn.innerText = e;
+            btn.onclick = () => selectEmoji(e);
+            pallet.appendChild(btn);
         });
+        
+        updateBoxEffect();
+    };
+
+    function selectEmoji(e) {
+        if (!e1 || (e1 && e2)) {
+            e1 = e; e2 = "";
+            document.getElementById('box1').innerText = e1;
+            document.getElementById('box2').innerText = "?";
+            document.getElementById('boxRes').innerText = "?";
+            document.getElementById('inputSection').style.display = 'none';
+        } else {
+            e2 = e;
+            document.getElementById('box2').innerText = e2;
+            document.getElementById('boxRes').innerText = "🔮";
+            document.getElementById('inputSection').style.display = 'block';
+        }
+        updateBoxEffect();
     }
 
-    function openModal(id) { document.getElementById(id).style.display='flex'; }
-    function closeModal(id) { document.getElementById(id).style.display='none'; }
-    function changeAvatar(seed) { document.getElementById('avatarBase').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`; }
-    
-    function confirmMix() {
+    function updateBoxEffect() {
+        document.getElementById('box1').classList.toggle('selected-box', !e1 || (e1 && e2));
+        document.getElementById('box2').classList.toggle('selected-box', e1 && !e2);
+    }
+
+    function updateStat(id, event) {
+        const bar = document.getElementById(id);
+        const rect = event.currentTarget.getBoundingClientRect();
+        const offsetX = event.clientX - rect.left;
+        const percentage = Math.max(10, Math.min(100, (offsetX / rect.width) * 100));
+        bar.style.width = percentage + "%";
+    }
+
+    function completeAlchemy() {
         document.getElementById('resEmoji').innerText = "🔮";
-        document.getElementById('resDiary').innerText = document.getElementById('diaryIn').value;
+        document.getElementById('resDiary').innerText = document.getElementById('diaryIn').value || "오늘도 화이팅!";
         closeModal('kitchenModal');
     }
 
-    function sendToClass() {
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function changeAvatar(s) { document.getElementById('avatarBase').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${s}`; }
+
+    function sendData() {
         const diary = document.getElementById('resDiary').innerText;
-        if(diary.includes("감정을 섞어")) return alert("먼저 감정 성찰을 완료해주세요!");
-        
-        database.ref('room/student' + curId).set({
-            num: curId, name: "홍길동",
+        if(diary === "오늘의 마음을 섞어주세요.") return alert("먼저 감정 연금술을 완료해주세요!");
+
+        db.ref('room/student' + studentId).set({
+            num: studentId,
+            name: studentId + "번 학생",
             emoji: document.getElementById('resEmoji').innerText,
             diary: diary,
-            status: "online",
-            timestamp: Date.now()
-        }).then(() => { location.href = "classroom.html"; });
+            s1: document.getElementById('s1').style.width,
+            s2: document.getElementById('s2').style.width,
+            status: "online"
+        }).then(() => {
+            alert("전송 완료! 교실로 이동합니다.");
+            location.href = "classroom.html";
+        }).catch(e => alert("오류 발생: " + e.message));
     }
-    init();
 </script>
 </body>
 </html>
