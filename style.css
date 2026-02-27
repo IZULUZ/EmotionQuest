@@ -1,70 +1,33 @@
-@font-face {
-    font-family: 'DungGeunMo';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
-}
+@font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
+:root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; --pm-inner: #fff9eb; }
 
-:root {
-    --pm-dark: #3e2723;
-    --pm-gold: #c5a059;
-    --pm-bg: #fdf5e6;
-    --pm-inner: #fff9eb;
-}
+body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
 
-body {
-    margin: 0; background: #1a1a1a;
-    font-family: 'DungGeunMo', sans-serif;
-    display: flex; justify-content: center; align-items: center; height: 100vh;
-}
+/* 메인 윈도우 */
+.window { width: 1050px; height: 780px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
+.header { background: var(--pm-dark); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 26px; border-bottom: 5px double var(--pm-gold); display: flex; justify-content: space-between; padding: 10px 30px; }
 
-.pm-window {
-    width: 1024px; height: 750px; background: var(--pm-bg);
-    border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold);
-    display: flex; flex-direction: column; position: relative;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
-}
+/* 레이아웃 구성 */
+.main-content { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
+.left-panel { width: 350px; display: flex; flex-direction: column; gap: 15px; }
+.right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; }
 
-.pm-header {
-    background: linear-gradient(to bottom, #5d4037, #3e2723);
-    color: var(--pm-gold); padding: 12px; text-align: center;
-    font-size: 24px; border-bottom: 4px double var(--pm-gold);
-}
+/* 프레임들 */
+.frame { background: var(--pm-inner); border: 6px outset var(--pm-gold); padding: 15px; position: relative; }
+.char-frame { height: 380px; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; background: url('https://i.imgur.com/8QpY3R4.png') bottom center no-repeat; background-size: cover; }
+.status-frame { flex: 1; padding: 10px; }
+.quest-frame { height: 200px; overflow-y: auto; background: #fff; border: 4px inset #333; }
 
-.pm-container { display: flex; flex: 1; padding: 15px; gap: 15px; overflow: hidden; }
+/* 아바타 및 이모지 */
+.avatar { width: 180px; image-rendering: pixelated; z-index: 2; }
+.emoji-overlay { position: absolute; top: 20px; right: 20px; width: 80px; z-index: 3; }
 
-/* 공통 사이드 패널 */
-.pm-side {
-    width: 320px; background: var(--pm-inner); border: 5px double var(--pm-dark);
-    display: flex; flex-direction: column; padding: 12px;
-}
-
-.avatar-frame {
-    width: 100%; height: 280px; background: white; border: 4px inset var(--pm-dark);
-    margin-bottom: 10px; display: flex; justify-content: center; align-items: center;
-}
-
-/* 육각형 차트 영역 */
-.radar-container { height: 180px; margin: 10px 0; }
-
-/* 버튼 디자인 */
-.pm-btn {
-    background: var(--pm-dark); color: var(--pm-gold);
-    border: 4px outset var(--pm-gold); padding: 8px;
-    cursor: pointer; font-family: inherit; font-size: 16px;
-}
+/* 버튼 및 태그 */
+.pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; font-size: 18px; width: 100%; margin-bottom: 5px; }
 .pm-btn:active { border-style: inset; }
+.tag { display: inline-block; border: 1px solid #333; padding: 5px 10px; margin: 3px; cursor: pointer; font-size: 14px; background: #fff; }
+.tag.on { background: var(--pm-dark); color: #fff; }
 
-/* 퀘스트 박스 */
-.quest-box {
-    background: #000; border: 2px solid var(--pm-gold);
-    color: #ffd700; padding: 10px; font-size: 14px; margin-top: auto;
-}
-
-/* 모달 */
-.modal {
-    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center;
-}
-.pm-popup {
-    background: var(--pm-bg); border: 10px ridge var(--pm-dark);
-    padding: 25px; width: 600px;
-}
+/* 팝업 모달 */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; justify-content: center; align-items: center; }
+.modal-content { background: var(--pm-bg); border: 10px ridge var(--pm-dark); width: 600px; padding: 30px; text-align: center; }
