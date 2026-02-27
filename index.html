@@ -2,180 +2,143 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>오늘의 감정일기 - 6-5</title>
+    <title>6-5 감정 연금술소</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        :root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; --pm-inner: #fff9eb; }
-        
-        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #333; overflow: hidden; }
-        
-        .window { width: 1000px; height: 750px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; position: relative; }
-        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 12px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
-        .content { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
-        
-        .side { width: 320px; display: flex; flex-direction: column; gap: 10px; }
-        .char-frame { width: 100%; height: 350px; background: var(--pm-inner); border: 5px outset var(--pm-gold); display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .char-pixel { width: 150px; height: auto; image-rendering: pixelated; } /* 픽셀 깨짐 방지 */
-        
-        .advice-box { background: #fff; border: 3px inset #333; padding: 15px; flex: 1; font-size: 18px; line-height: 1.6; overflow-y: auto; color: #111; }
-        .advice-box b { color: #d32f2f; font-size: 20px; }
-
-        .main-panel { flex: 1; background: #1a1a1a; border: 4px double var(--pm-gold); border-radius: 15px; display: flex; flex-direction: column; align-items: center; padding: 20px; color: white; }
-        
-        /* 이모지 그리드 스타일 수정 */
-        .emoji-scroll { width: 100%; height: 220px; overflow-y: scroll; background: #fff; border: 4px inset #333; display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; padding: 10px; margin-bottom: 10px; }
-        .emoji-item { font-size: 40px; cursor: pointer; text-align: center; line-height: 1.5; user-select: none; }
-        .emoji-item:hover { background: #eee; border-radius: 8px; }
-        .emoji-item.selected { background: #fee185; border-radius: 8px; }
-
-        .result-display { display: flex; align-items: center; font-size: 45px; gap: 15px; color: #fff; margin: 10px 0; }
-        
-        .tag-container { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 10px; }
-        .tag { background: #333; border: 1px solid var(--pm-gold); color: gold; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 14px; }
-        .tag.on { background: var(--pm-gold); color: #000; font-weight: bold; }
-
-        input { width: 90%; background: #333; border: 2px solid var(--pm-gold); color: white; text-align: center; font-family: inherit; font-size: 16px; padding: 10px; margin-top: 10px; }
-        
-        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 15px 20px; cursor: pointer; font-family: inherit; font-size: 20px; margin-top: 15px; width: 100%; }
-        .pm-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .pm-btn:active { border-style: inset; }
+        :root { --pm-bg: #fdf5e6; --pm-dark: #2d1b15; --pm-gold: #e6b31e; }
+        body { margin: 0; background: #121212; font-family: 'DungGeunMo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; color: #333; }
+        .window { width: 900px; height: 680px; background: var(--pm-bg); border: 12px ridge var(--pm-dark); outline: 4px solid var(--pm-gold); display: flex; flex-direction: column; }
+        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 15px; text-align: center; font-size: 24px; border-bottom: 5px double var(--pm-gold); }
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100; justify-content:center; align-items:center; }
+        .modal-content { background:var(--pm-bg); border:8px ridge var(--pm-dark); width:650px; padding:30px; text-align:center; }
+        .emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:8px; height:150px; overflow-y:auto; background:white; padding:10px; border:4px inset #333; margin:15px 0; }
+        .emoji-item { font-size:32px; cursor:pointer; }
+        .mix-area { display:flex; align-items:center; justify-content:center; gap:15px; font-size:35px; margin:15px 0; background:#fff; padding:10px; border-radius:10px; }
+        .mix-result { width:80px; height:80px; border:2px dashed var(--pm-gold); display:flex; align-items:center; justify-content:center; }
+        .q-card { background:white; border:3px solid var(--pm-dark); padding:15px; width:30%; cursor:pointer; font-size:14px; }
+        .q-card.selected { background:var(--pm-gold); border-color:white; }
+        .tag { display:inline-block; border:1px solid #333; padding:4px 8px; margin:2px; cursor:pointer; font-size:13px; }
+        .tag.on { background:var(--pm-dark); color:white; }
     </style>
 </head>
 <body>
 
 <div class="window">
-    <div class="header">📔 오늘의 감정일기 (6학년 5반)</div>
-    <div class="content">
-        <div class="side">
-            <div class="char-frame">
-                <img id="charImg" src="" class="char-pixel">
-            </div>
-            <div class="advice-box">
-                <b>◈ 연금술사의 조언</b><br>
-                <span id="adviceText">오늘 어떤 기분이었나요? 이모지 2개와 감정 단어를 골라주세요.</span>
-            </div>
+    <div class="header">🔮 6학년 5반 감정 연금술소</div>
+    <div style="display:flex; flex:1; justify-content:center; align-items:center;">
+        <button onclick="openStep1()" style="padding:20px 40px; font-size:24px; font-family:inherit; background:var(--pm-dark); color:var(--pm-gold); border:6px outset var(--pm-gold); cursor:pointer;">✨ 오늘의 감정 카드 만들기</button>
+    </div>
+</div>
+
+<div id="modal1" class="modal">
+    <div class="modal-content">
+        <h3>1. 감정 재료 및 단어 선택</h3>
+        <div class="emoji-grid" id="grid"></div>
+        <div class="mix-area">
+            <span id="s1">❓</span> <span>+</span> <span id="s2">❓</span> <span>=</span>
+            <div class="mix-result" id="resImg">?</div>
         </div>
+        <div id="tagList"></div>
+        <br><button id="nextBtn" disabled onclick="openStep2()" style="padding:10px 20px; font-family:inherit;">분석 결과 확인 & 퀘스트 선택</button>
+    </div>
+</div>
 
-        <div class="main-panel">
-            <div style="font-size: 13px; color: gold; margin-bottom: 8px;">▼ 이모지를 2개 선택하세요 (스크롤 가능)</div>
-            <div class="emoji-scroll" id="emojiGrid"></div>
-            
-            <div class="result-display">
-                <span id="slot1">❓</span> <span>+</span> <span id="slot2">❓</span>
-            </div>
-
-            <div class="tag-container" id="tagList"></div>
-            <input type="text" id="diaryInput" placeholder="오늘 있었던 일을 짧게 기록해보세요..." maxlength="30">
-
-            <button id="entryBtn" class="pm-btn" disabled onclick="enterClass()">감정 카드 완성! 교실 입장 🚪</button>
-        </div>
+<div id="modal2" class="modal">
+    <div class="modal-content">
+        <h3 id="analysisTitle">감정 분석 결과</h3>
+        <p id="adviceText" style="background:#fff; padding:10px; border:2px inset #ccc; font-size:15px;"></p>
+        <h4>연관 인성 퀘스트를 골라보세요</h4>
+        <div style="display:flex; gap:10px; justify-content:center;" id="questChoices"></div>
+        <br><button id="finBtn" disabled onclick="submit()" style="padding:15px 30px; font-family:inherit; background:var(--pm-dark); color:var(--pm-gold);">연금술 완료! 입장</button>
     </div>
 </div>
 
 <script>
-    // Firebase 설정
-    const firebaseConfig = { 
-        apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", 
-        authDomain: "secret-quest-class.firebaseapp.com", 
-        databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", 
-        projectId: "secret-quest-class", 
-        storageBucket: "secret-quest-class.firebasestorage.app", 
-        messagingSenderId: "397245266210", 
-        appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" 
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    // 접속하자마자 번호 입력받기
-    const sNum = prompt("본인의 번호를 입력하세요 (1~23)", "1") || "1";
-    
-    // 캐릭터 이미지 (절대 깨지지 않는 픽셀 스타일 GIF로 교체)
-    const charUrl = (parseInt(sNum) % 2 === 1) 
-        ? "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif" // 귀여운 피카츄형 픽셀
-        : "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/151.gif"; // 귀여운 뮤형 픽셀
-    document.getElementById('charImg').src = charUrl;
+    const emojis = ["😊","😡","😢","🥰","🤔","🥳","😎","😴","🔥","🌈","🤢","😱","🤩","😭","🫠","🤯","🥺","🤤","👾","👻","💀","🤖","🎃","⭐","🌙","🍀","💎","🎨","🎮","⚽","🍎","🌈"];
+    const tagsArr = ["기쁨", "화남", "슬픔", "불안", "신남", "피곤", "평온"];
+    let sel1=null, sel2=null, finalImg="", selectedTags=[], selectedQuest=null;
 
-    const emojis = ["😊","😡","😢","🥰","🤔","🥳","😎","😴","🔥","🌈","🤢","😱","🤩","😭","🫠","😶‍🌫️","🤯","🥺","🤤","👺","👾","👻","💀","🤡","🤖","🎃","⭐","🌙","🍀","💎","🎨","🎮"];
-    let sel1 = null, sel2 = null, finalTags = [];
-    const words = ["설렘", "뿌듯", "걱정", "당당", "평온", "신남", "짜증", "슬픔", "몽글", "피곤", "자신감", "행복"];
+    function openStep1(){ document.getElementById('modal1').style.display='flex'; }
 
-    // 이모지 그리드 생성
-    const grid = document.getElementById('emojiGrid');
+    const g = document.getElementById('grid');
     emojis.forEach(e => {
-        let div = document.createElement('div');
-        div.className = 'emoji-item';
-        div.innerText = e;
-        div.onclick = () => {
-            if(!sel1 || (sel1 && sel2)) {
-                sel1 = e; sel2 = null;
-                document.getElementById('slot1').innerText = e;
-                document.getElementById('slot2').innerText = "❓";
-            } else {
-                sel2 = e;
-                document.getElementById('slot2').innerText = e;
-                updateAdvice();
-            }
-            checkReady();
+        let d = document.createElement('div'); d.className='emoji-item'; d.innerText=e;
+        d.onclick = () => {
+            if(!sel1 || (sel1 && sel2)) { sel1=e; sel2=null; document.getElementById('s1').innerText=e; document.getElementById('s2').innerText="❓"; }
+            else { sel2=e; document.getElementById('s2').innerText=e; updateMix(); }
         };
-        grid.appendChild(div);
+        g.appendChild(d);
     });
 
-    // 태그 생성
-    const tl = document.getElementById('tagList');
-    words.forEach(w => {
-        let b = document.createElement('div');
-        b.className = 'tag';
-        b.innerText = w;
-        b.onclick = () => {
-            if(b.classList.contains('on')) {
-                b.classList.remove('on');
-                finalTags = finalTags.filter(t => t !== w);
-            } else if(finalTags.length < 3) {
-                b.classList.add('on');
-                finalTags.push(w);
-            }
-            checkReady();
+    const tL = document.getElementById('tagList');
+    tagsArr.forEach(t => {
+        let s = document.createElement('span'); s.className='tag'; s.innerText=t;
+        s.onclick = () => {
+            if(s.classList.contains('on')){ s.classList.remove('on'); selectedTags = selectedTags.filter(i=>i!==t); }
+            else if(selectedTags.length < 2){ s.classList.add('on'); selectedTags.push(t); }
+            document.getElementById('nextBtn').disabled = !(sel1 && sel2 && selectedTags.length > 0);
         };
-        tl.appendChild(b);
+        tL.appendChild(s);
     });
 
-    function updateAdvice() {
-        if(!sel1 || !sel2) return;
-        const comb = sel1 + sel2;
-        let txt = "오늘은 참 평온한 마음을 가지고 있군요!";
-        if(comb.match(/😡|🔥/)) txt = "마음 속에 에너지가 넘치고 있어요! 이 기운을 긍정적인 곳에 써보세요.";
-        else if(comb.match(/😢|😭|😴/)) txt = "조금 쉬어가도 괜찮아요. 따뜻한 차 한 잔 어때요?";
-        document.getElementById('adviceText').innerHTML = `오늘 ${sel1}와 ${sel2}를 골랐군요. <br>${txt}`;
+    function updateMix() {
+        const u1 = sel1.codePointAt(0).toString(16); const u2 = sel2.codePointAt(0).toString(16);
+        finalImg = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${u1}/u${u1}_u${u2}.png`;
+        document.getElementById('resImg').innerHTML = `<img src="${finalImg}" style="width:100%" onerror="this.src='https://openmoji.org/data/color/svg/2728.svg'">`;
     }
 
-    function checkReady() {
-        const btn = document.getElementById('entryBtn');
-        if(sel1 && sel2 && finalTags.length >= 2) {
-            btn.disabled = false;
+    async function openStep2() {
+        document.getElementById('modal1').style.display='none';
+        document.getElementById('modal2').style.display='flex';
+        
+        let advice = ""; let targetType = "";
+        if(selectedTags.includes("화남") || selectedTags.includes("불안")) {
+            advice = "마음의 온도가 높군요. 차분하게 숨을 고르고 '배려'의 행동을 하면 마음이 시원해질 거예요.";
+            targetType = "배려";
+        } else if(selectedTags.includes("평온") || selectedTags.includes("기쁨")) {
+            advice = "안정적인 기운이 느껴집니다. '존중'의 말 한마디로 주변을 밝게 비춰보는 건 어떨까요?";
+            targetType = "존중";
         } else {
-            btn.disabled = true;
+            advice = "몽글몽글한 감정이 가득해요. '사랑'의 마음을 담아 작은 친절을 베풀어 보세요.";
+            targetType = "사랑";
         }
+        document.getElementById('adviceText').innerText = advice;
+
+        // DB에서 게시판 퀘스트 가져와서 타입에 맞는 것 추천
+        const snap = await db.ref('board/quests').once('value');
+        const container = document.getElementById('questChoices');
+        container.innerHTML = "";
+        
+        snap.forEach(c => {
+            const q = c.val();
+            if(q.type === targetType || container.children.length < 3) {
+                let card = document.createElement('div'); card.className='q-card';
+                card.innerHTML = `<strong>[${q.type}]</strong><br>${q.title}`;
+                card.onclick = () => {
+                    document.querySelectorAll('.q-card').forEach(x=>x.classList.remove('selected'));
+                    card.classList.add('selected'); selectedQuest = q;
+                    document.getElementById('finBtn').disabled = false;
+                };
+                container.appendChild(card);
+            }
+        });
     }
 
-    function enterClass() {
-        const u1 = sel1.codePointAt(0).toString(16);
-        const u2 = sel2.codePointAt(0).toString(16);
-        const emojiUrl = `https://www.gstatic.com/android/keyboard/emojikitchen/20201001/u${u1}/u${u1}_u${u2}.png`;
-
-        db.ref(`room/student${sNum}`).set({
-            num: sNum,
-            name: sNum + "번 학생",
-            emojiImg: emojiUrl,
-            gender: (parseInt(sNum) % 2 === 1 ? 'male' : 'female'),
-            tags: finalTags,
-            diary: document.getElementById('diaryInput').value,
-            status: "online",
-            gems: { respect: 0, care: 0, love: 0 }
-        }).then(() => {
-            location.href = `classroom.html?num=${sNum}`;
+    function submit() {
+        const n = prompt("번호 입력 (1~23)", "1") || "1";
+        // 학생별 고유 픽셀 이미지 (깨지지 않는 포켓몬/애니메이션 도트 경로)
+        const charImg = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${n}.gif`;
+        
+        db.ref(`room/student${n}`).set({
+            num:n, emojiImg:finalImg, charImg:charImg, diary:selectedTags.join(", "), status:'online', gems:{배려:0,존중:0,사랑:0}
         });
+        db.ref(`room/student${n}/myQuests`).push(selectedQuest)
+        .then(() => location.href=`classroom.html?num=${n}`);
     }
 </script>
 </body>
