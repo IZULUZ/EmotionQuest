@@ -3,66 +3,45 @@
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff');
 }
 
-:root { --main-gold: #d4af37; --bg-sky: #e3f2fd; }
-
 body { 
     margin: 0; padding: 0; font-family: 'DungGeunMo', sans-serif; 
-    background: var(--bg-sky) url('https://www.transparenttextures.com/patterns/notebook.png');
-    display: flex; justify-content: center; align-items: center; height: 100vh;
+    background: #e3f2fd; display: flex; justify-content: center; align-items: center; height: 100vh;
 }
 
-.app-container {
-    width: 95vw; height: 90vh; background: white; border: 10px double var(--main-gold);
-    display: flex; flex-direction: column; position: relative; border-radius: 20px;
+.app-window {
+    width: 95vw; height: 90vh; background: white; border: 8px double #d4af37;
+    display: flex; flex-direction: column; border-radius: 20px; overflow: hidden;
 }
 
-/* 상단바 및 버튼 */
-.header { padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; }
-.student-toggle { display: flex; gap: 10px; }
+/* 상단바: 버튼 배치 */
+.nav-bar { background: #d4af37; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
+.gender-btns button { background: white; border: 2px solid #333; cursor: pointer; padding: 5px 15px; font-family: inherit; margin-left: 5px; }
 
-/* 메인 레이아웃 */
-.content-area { display: flex; flex: 1; padding: 30px; gap: 40px; justify-content: space-around; align-items: flex-start; }
+.main-content { display: flex; flex: 1; padding: 20px; gap: 20px; overflow: hidden; }
 
-/* 왼쪽: 캐릭터와 이름 */
-.profile-section { text-align: center; width: 250px; }
-.char-display { font-size: 150px; margin: 20px 0; }
+/* 왼쪽: 캐릭터 대기 화면 */
+.char-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 2px dashed #ccc; }
+.stickman { width: 250px; height: auto; transition: 0.3s; }
 
-/* 중앙: 미션 보드 */
-.mission-board {
-    width: 320px; height: 400px; background: #fffbe6; border-radius: 50% 50% 10px 10px;
-    border: 3px solid #d2b48c; padding: 40px 20px; position: relative; text-align: center;
+/* 오른쪽: 실시간 감정 카드 */
+.card-section { width: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.emotion-card { 
+    width: 300px; height: 520px; background: #000; border-radius: 20px; color: white; padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4); border: 2px solid #d4af37; position: relative;
 }
-.mission-board::before {
-    content: '📌'; position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-size: 30px;
-}
+.card-img { width: 100%; height: 260px; background: #222; border-radius: 15px; display: flex; justify-content: center; align-items: center; font-size: 100px; }
 
-/* 오른쪽: 완성될 감정 카드 전용 */
-.card-preview {
-    width: 300px; height: 500px; background: #111; border-radius: 20px; color: white;
-    padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid var(--main-gold);
-}
-.card-inner-img { width: 100%; height: 250px; display: flex; justify-content: center; align-items: center; font-size: 120px; background: #222; border-radius: 10px; }
+/* 팝업 모달 */
+.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+.kitchen-popup { width: 650px; background: white; border-radius: 25px; padding: 30px; border: 6px solid #3399ff; position: relative; max-height: 90vh; overflow-y: auto; }
 
-/* 팝업 모달 (이모지 키친) */
-.modal {
-    display: none; position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center;
-}
-.kitchen-window {
-    width: 600px; background: white; border-radius: 30px; border: 5px solid #3399ff;
-    padding: 30px; position: relative; animation: slideUp 0.3s ease;
-}
-@keyframes slideUp { from { transform: translateY(50px); opacity:0; } to { transform: translateY(0); opacity:1; } }
+.emoji-pallet { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding: 15px; background: #f0f0f0; border-radius: 15px; }
+.emoji-item { font-size: 30px; background: white; border: 1px solid #ddd; cursor: pointer; border-radius: 10px; }
 
-.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; max-height: 250px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 15px; }
-.emoji-btn { font-size: 30px; background: none; border: 1px solid #eee; cursor: pointer; border-radius: 10px; transition: 0.2s; }
-.emoji-btn:hover { background: #e3f2fd; transform: scale(1.1); }
+/* 퀘스트 선택 박스 */
+.quest-box { background: #fffbe6; border: 2px solid #d2b48c; padding: 15px; border-radius: 10px; margin-top: 15px; }
+.quest-opt { background: white; border: 1px solid #ddd; margin: 5px 0; padding: 8px; cursor: pointer; border-radius: 5px; font-size: 14px; }
+.quest-opt:hover { background: #fff0f5; border-color: #d4af37; }
+.quest-opt.selected { background: #ffd700; border-color: #333; }
 
-.formula { display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 40px; margin: 25px 0; background: #eee; padding: 15px; border-radius: 50px; }
-
-/* 픽셀 스타일 버튼 */
-.btn-p { 
-    background: #ffb6c1; border: 4px outset #fff; padding: 10px 20px; 
-    font-family: inherit; font-size: 18px; cursor: pointer; border-radius: 10px; 
-}
-.btn-p:active { border-style: inset; }
+.btn-main { background: #ffb6c1; border: 4px outset #fff; padding: 12px 25px; font-family: inherit; cursor: pointer; font-size: 18px; margin-top: 10px; border-radius: 10px; }
