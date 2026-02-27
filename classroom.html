@@ -9,24 +9,28 @@
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
         body { margin:0; background:#2c1b15; font-family:'DungGeunMo'; color:white; overflow:hidden; }
         .grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:15px; padding:20px; height:80vh; }
-        .desk { background:#4e342e; border:4px solid #3e2723; height:130px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }
-        .desk.online { background:#fff; color:#000; border:4px solid gold; }
-        .char-img { width:60px; height:60px; image-rendering:pixelated; }
-        .emoji-overlay { position:absolute; top:5px; right:5px; width:30px; }
-        .nav { position:fixed; bottom:0; width:100%; height:70px; background:#111; display:flex; justify-content:center; gap:20px; align-items:center; border-top:3px solid gold; }
-        .pop { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; color:#333; padding:20px; border:5px ridge gold; width:300px; z-index:100; }
+        .desk { background:#4e342e; border:4px solid #3e2723; height:130px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; color:#ccc; }
+        .desk.online { background:#fff; color:#000; border:4px solid gold; box-shadow:0 0 15px gold; }
+        .char-img { width:70px; height:70px; image-rendering:pixelated; }
+        .emoji-overlay { position:absolute; top:5px; right:5px; width:35px; }
+        
+        .nav { position:fixed; bottom:0; width:100%; height:70px; background:#111; display:flex; justify-content:center; gap:25px; align-items:center; border-top:3px solid gold; }
+        .btn { background:gold; color:black; border:3px outset white; padding:10px 20px; font-family:inherit; cursor:pointer; }
+        .pop { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; color:#333; padding:25px; border:8px ridge gold; width:350px; z-index:1000; }
     </style>
 </head>
 <body>
+
 <div class="grid" id="grid"></div>
+
 <div class="nav">
-    <button onclick="toggle('popQ')">🎒 내 퀘스트</button>
-    <button onclick="toggle('popG')">💎 내 보석함</button>
-    <button onclick="goAdmin()">⚙️ 교사용</button>
+    <button class="btn" onclick="toggle('popQ')">🎒 내 퀘스트 보관함</button>
+    <button class="btn" onclick="toggle('popG')">💎 보석 보관함</button>
+    <button class="btn" onclick="goAdmin()" style="background:#ff4444; color:white;">⚙️ 교사용 페이지</button>
 </div>
 
-<div id="popQ" class="pop"><h3>📜 진행 중</h3><div id="qList"></div><button onclick="toggle('popQ')">닫기</button></div>
-<div id="popG" class="pop"><h3>💎 보석(미덕)</h3><div id="gList"></div><button onclick="toggle('popG')">닫기</button></div>
+<div id="popQ" class="pop"><h3>📜 진행 중인 퀘스트</h3><div id="qList"></div><br><button onclick="toggle('popQ')">닫기</button></div>
+<div id="popG" class="pop"><h3>💎 획득한 보석</h3><div id="gList"></div><br><button onclick="toggle('popG')">닫기</button></div>
 
 <script>
     const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
@@ -34,30 +38,30 @@
     const myNum = new URLSearchParams(window.location.search).get('num') || "1";
 
     const g = document.getElementById('grid');
-    for(let i=1; i<=23; i++) { g.innerHTML += `<div class="desk" id="d${i}">${i}</div>`; }
+    for(let i=1; i<=23; i++) { g.innerHTML += `<div class="desk" id="d${i}">${i}번 책상</div>`; }
 
     db.ref('room/').on('value', snap => {
         snap.forEach(c => {
             const s = c.val(); const d = document.getElementById(`d${s.num}`);
             if(d && s.status==='online') {
                 d.className='desk online';
-                d.innerHTML = `<img src="${s.charImg}" class="char-img"><img src="${s.emojiImg}" class="emoji-overlay"><br>${s.num}번`;
+                d.innerHTML = `<img src="${s.charImg}" class="char-img"><img src="${s.emojiImg}" class="emoji-overlay"><br><b>${s.num}번</b>`;
             }
         });
         const me = snap.val()[`student${myNum}`];
-        if(me) document.getElementById('gList').innerHTML = `배려: ${me.gems?.배려||0} 💙<br>존중: ${me.gems?.존중||0} 💛<br>사랑: ${me.gems?.사랑||0} ❤️`;
+        if(me) document.getElementById('gList').innerHTML = `배려: ${me.gems?.배려||0} 💙 / 존중: ${me.gems?.존중||0} 💛 / 사랑: ${me.gems?.사랑||0} ❤️`;
     });
 
     db.ref(`room/student${myNum}/myQuests`).on('value', snap => {
         const l = document.getElementById('qList'); l.innerHTML = "";
         snap.forEach(c => {
-            l.innerHTML += `<div>${c.val().title} <button onclick="report('${c.key}')">완료보고</button></div>`;
+            l.innerHTML += `<div style="margin-bottom:10px;">${c.val().title} <button onclick="report('${c.key}')">완료보고</button></div>`;
         });
     });
 
-    function report(k) { db.ref(`room/student${myNum}/requestDone`).set({key:k}); alert("보고 완료!"); }
+    function report(k) { db.ref(`room/student${myNum}/requestDone`).set({key:k}); alert("완료 보고를 보냈습니다!"); }
     function toggle(id){ const p=document.getElementById(id); p.style.display=(p.style.display==='block'?'none':'block'); }
-    function goAdmin() { if(prompt("비밀번호")==="1234") location.href="admin.html"; }
+    function goAdmin() { if(prompt("선생님 비밀번호를 입력하세요")==="1234") location.href="admin.html"; }
 </script>
 </body>
 </html>
