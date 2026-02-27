@@ -2,137 +2,46 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 교실 - 학생용</title>
+    <title>6-5 교실</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
-        :root { --pm-dark: #3e2723; --pm-gold: #c5a059; --pm-bg: #fdf5e6; }
-        body { margin:0; background:#222; font-family:'DungGeunMo'; display:flex; justify-content:center; align-items:center; height:100vh; }
-        .pm-window { width:1024px; height:750px; background:var(--pm-bg); border:12px ridge var(--pm-dark); display:flex; flex-direction:column; }
-        .classroom-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:12px; padding:15px; flex:1; background:#ead7b1; border:5px inset #3e2723; margin:10px; }
-        .desk { background:#3e2723; border:3px solid var(--pm-gold); height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#666; cursor:pointer; font-size:12px; }
-        .desk.online { background:#fff9eb; color:#333; }
-        .desk img { width:45px; margin-bottom:5px; display:none; }
+        body { background:#222; font-family:'DungGeunMo'; margin:0; display:flex; justify-content:center; align-items:center; height:100vh; }
+        .pm-window { width:1000px; height:700px; background:#fdf5e6; border:12px ridge #3e2723; display:flex; flex-direction:column; }
+        .classroom-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; padding:20px; flex:1; background:#ead7b1; border:5px inset #3e2723; margin:10px; }
+        .desk { background:#3e2723; border:2px solid #555; height:100px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#555; }
+        /* 불 들어온 책상 */
+        .desk.online { background:#fff !important; border:3px solid gold !important; color:#000 !important; box-shadow: 0 0 15px white; }
+        .desk img { width:40px; display:none; }
         .desk.online img { display:block; }
-        .bottom-bar { background:var(--pm-dark); padding:12px; display:flex; gap:10px; justify-content:center; }
-        .pm-btn { background:var(--pm-dark); color:var(--pm-gold); border:4px outset var(--pm-gold); padding:8px 15px; cursor:pointer; font-family:inherit; }
-        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:200; justify-content:center; align-items:center; }
-        .popup { background:var(--pm-bg); border:8px ridge var(--pm-dark); padding:20px; width:550px; }
     </style>
 </head>
 <body>
-
 <div class="pm-window">
-    <div class="pm-header">6-5 CLASSROOM (Student View)</div>
-    <div class="classroom-grid" id="deskGrid"></div>
-    <div class="bottom-bar">
-        <button class="pm-btn" onclick="openModal('questBoard')">📜 퀘스트 게시판</button>
-        <button class="pm-btn" onclick="openModal('myInven')">🎒 내 퀘스트 보관함</button>
-        <button class="pm-btn" style="background:#888;" onclick="location.href='index.html'">🔙 다시 입장하기</button>
-    </div>
+    <div id="deskGrid" class="classroom-grid"></div>
 </div>
-
-<div id="myInven" class="modal"><div class="popup" style="width:400px;">
-    <h3>🎒 나의 수령 목록</h3>
-    <div id="myList" style="min-height:150px; background:white; border:2px inset #ccc; padding:10px;"></div>
-    <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="closeModal('myInven')">닫기</button>
-</div></div>
-
-<div id="questBoard" class="modal"><div class="popup">
-    <h3>📜 학급 전체 미션</h3>
-    <div id="boardList" style="min-height:200px; background:white; border:2px inset #ccc; padding:10px;"></div>
-    <button class="pm-btn" style="width:100%; margin-top:10px;" onclick="closeModal('questBoard')">닫기</button>
-</div></div>
-
-<div id="detail" class="modal"><div class="popup">
-    <h2 id="detName" style="text-align:center;">정보</h2>
-    <div style="display:flex; gap:20px;">
-        <div style="width:250px; height:250px; background:white;"><canvas id="chart"></canvas></div>
-        <div style="flex:1;">
-            <div style="background:#000; color:white; padding:10px; border-radius:10px; text-align:center;">
-                <img id="detImg" src="" style="width:70px;">
-                <div id="detTag" style="color:gold;">#태그</div>
-            </div>
-            <h4 style="margin:10px 0;">💎 보석: <span id="detGems">0</span>개</h4>
-            <div id="detQuests" style="font-size:12px; height:80px; overflow-y:auto; background:white; border:1px solid #ccc; padding:5px;"></div>
-        </div>
-    </div>
-    <button class="pm-btn" style="width:100%; margin-top:15px;" onclick="closeModal('detail')">닫기</button>
-</div></div>
-
 <script>
-    const db = firebase.database();
-    const myNum = new URLSearchParams(window.location.search).get('num');
-    let chartObj = null;
+    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
+    const grid = document.getElementById('deskGrid');
     for(let i=1; i<=23; i++) {
         let d = document.createElement('div'); d.className='desk'; d.id=`desk-${i}`;
-        d.innerHTML = `No.${i}`; d.onclick = () => showDetail(i);
-        document.getElementById('deskGrid').appendChild(d);
+        d.innerHTML = `No.${i}`; grid.appendChild(d);
     }
 
+    // 데이터가 바뀔 때마다 실시간으로 불 켜기
     db.ref('room/').on('value', snap => {
         snap.forEach(child => {
             const s = child.val();
             const desk = document.getElementById(`desk-${s.num}`);
-            if(desk && s.status === 'online') {
-                desk.classList.add('online');
-                desk.innerHTML = `<img src="${s.emojiImg}"><b>${s.name}</b><span>💎${s.gems||0}</span>`;
+            if(desk && s.status === "online") {
+                desk.className = 'desk online';
+                desk.innerHTML = `<img src="${s.emojiImg}"><b>${s.num}번</b>`;
             }
         });
     });
-
-    function showDetail(num) {
-        db.ref(`room/student${num}`).once('value', snap => {
-            if(!snap.exists()) return;
-            const s = snap.val();
-            document.getElementById('detName').innerText = `${s.name}의 상태`;
-            document.getElementById('detImg').src = s.emojiImg;
-            document.getElementById('detTag').innerText = s.tag;
-            document.getElementById('detGems').innerText = s.gems || 0;
-            const qA = document.getElementById('detQuests'); qA.innerHTML = "진행중:<br>";
-            if(s.quests) Object.values(s.quests).forEach(q => qA.innerHTML += `- ${q.title}<br>`);
-            openModal('detail');
-            drawChart(s.stats || [50,50,50,50,50,50]);
-        });
-    }
-
-    function drawChart(data) {
-        if(chartObj) chartObj.destroy();
-        chartObj = new Chart(document.getElementById('chart'), { type:'radar', data:{ labels:['자아','감정','관계','학습','회복','친절'], datasets:[{data:data, borderColor:'gold', backgroundColor:'rgba(197,160,89,0.2)'}] }, options:{scales:{r:{min:0,max:100,ticks:{display:false}}},plugins:{legend:{display:false}}} });
-    }
-
-    // 보관함 로직
-    db.ref(`room/student${myNum}/quests`).on('value', snap => {
-        const list = document.getElementById('myList'); list.innerHTML = "";
-        snap.forEach(child => {
-            const q = child.val();
-            list.innerHTML += `<div style="padding:8px; border-bottom:1px solid #eee;">🎯 ${q.title} <button class="pm-btn" style="font-size:10px; float:right;" onclick="doReport('${child.key}','${q.title}')">보고</button></div>`;
-        });
-    });
-
-    function doReport(key, title) {
-        db.ref(`room/student${myNum}/requestDone`).set({ key: key, title: title });
-        alert("선생님께 보고했습니다!");
-    }
-
-    // 게시판 수락
-    db.ref('globalQuests').on('value', snap => {
-        const list = document.getElementById('boardList'); list.innerHTML = "";
-        snap.forEach(child => {
-            list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee;">📜 ${child.val().title} <button class="pm-btn" style="font-size:10px; float:right;" onclick="accept('${child.val().title}')">수락</button></div>`;
-        });
-    });
-
-    function accept(t) {
-        db.ref(`room/student${myNum}/quests`).push({ title: t, status: 'doing' });
-        alert("퀘스트를 받았습니다.");
-    }
-
-    function openModal(id) { document.getElementById(id).style.display='flex'; }
-    function closeModal(id) { document.getElementById(id).style.display='none'; }
 </script>
 </body>
 </html>
