@@ -2,53 +2,65 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>EMOTION MAKER 6-5</title>
+    <title>Emotion Class 6-5</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 </head>
 <body>
 
-<div class="game-window">
-    <div class="window-header">
-        <span>6-5 EMOTION KITCHEN</span>
-        <div>
-            <button class="pixel-btn" onclick="switchStudent(1)">1번 남학생</button>
-            <button class="pixel-btn" onclick="switchStudent(2)">2번 여학생</button>
+<div class="app-container">
+    <div class="header">
+        <h1 style="margin:0; font-size:40px;">Emotion class</h1>
+        <div class="student-toggle">
+            <button class="btn-p" onclick="changeStudent(1)">1번 남학생</button>
+            <button class="btn-p" onclick="changeStudent(2)" style="background:#a2d2ff;">2번 여학생</button>
         </div>
     </div>
 
-    <div class="main-layout">
-        <div class="left-panel">
-            <h3>[ 감정 원소 선택 ]</h3>
-            <div class="emoji-category" id="emojiGrid"></div>
-            
-            <div style="background:#222; color:#ffd700; padding:20px; border-radius:15px; font-size:40px; text-align:center;">
-                <span id="s1">?</span> + <span id="s2">?</span> = <span id="sResult">?</span>
-            </div>
+    <div class="content-area">
+        <div class="profile-section">
+            <h2 id="stName" style="font-size:35px;">1번 홍길동</h2>
+            <div id="stChar" class="char-display">🧍</div>
+            <button class="btn-p" style="width:100%;" onclick="openKitchen()">감정 고르기</button>
+        </div>
 
-            <div id="tagArea" style="display:none; margin-top:15px;">
-                <strong>태그 선택(최대 3개):</strong>
-                <div id="tagList" style="display:flex; flex-wrap:wrap; gap:5px; margin:10px 0;"></div>
-                <textarea id="diary" style="width:100%; height:60px;" placeholder="오늘의 마음을 적어주세요."></textarea>
-                <button class="pixel-btn" style="width:100%; background:#ffb6c1;" onclick="sendData()">감정 카드 전송하기</button>
+        <div class="mission-board">
+            <h3 style="font-size:24px;">오늘의 감정 미션</h3>
+            <div id="missionList" style="text-align:left; padding:20px; line-height:2.5; font-size:18px;">
+                ◽ 감정 이모지 믹스하기<br>
+                ◽ 구체적인 이유 적어보기<br>
+                ◽ 나에게 어울리는 태그 달기<br>
+                ◽ 교실로 카드 전송하기
             </div>
         </div>
 
-        <div class="right-panel">
-            <h3>[ 나의 감정 카드 ]</h3>
-            <div class="card-view">
-                <div id="charEmoji" class="char-img">🧍</div>
-                <h2 id="dispName">1번 학생: 홍길동</h2>
-                <div id="dispTags" style="color:blue; font-weight:bold; margin:10px 0;">#감정 #기록</div>
-                <div id="dispDiary" style="font-size:15px; color:#555;">마음을 입력하면 카드가 완성됩니다.</div>
-            </div>
-
-            <div class="status-box">
-                <div class="stat-row">정서적 에너지 <div class="gauge-bg"><div id="b-en" class="gauge-fill" style="background:#ff4757; width:20%;"></div></div></div>
-                <div class="stat-row">심리적 안정감 <div class="gauge-bg"><div id="b-re" class="gauge-fill" style="background:#2ed573; width:20%;"></div></div></div>
+        <div class="card-preview" id="finalCard">
+            <div style="text-align:right; font-size:12px; margin-bottom:10px;">2월 27일 감정 기록</div>
+            <div class="card-inner-img" id="cardEmoji">✨</div>
+            <div style="margin-top:20px;">
+                <div id="cardTags" style="color:#3897f0; font-weight:bold; margin-bottom:10px;">#키워드분석</div>
+                <div id="cardDiary" style="font-size:15px; color:#ccc;">내용을 입력하면 기록됩니다.</div>
             </div>
         </div>
+    </div>
+</div>
+
+<div id="kitchenModal" class="modal">
+    <div class="kitchen-window">
+        <h2 style="text-align:center; margin-top:0;">Emoji Kitchen 👨‍🍳</h2>
+        <div class="emoji-grid" id="emojiPallet"></div>
+        
+        <div class="formula">
+            <span id="slot1">?</span> + <span id="slot2">?</span> = <span id="resSlot">?</span>
+        </div>
+
+        <div id="metaInput" style="display:none;">
+            <div id="tagBox" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:15px;"></div>
+            <textarea id="diaryInput" style="width:100%; height:60px; border-radius:10px; padding:10px;" placeholder="오늘의 마음을 한 줄로 표현해볼까요?"></textarea>
+            <button class="btn-p" style="width:100%; margin-top:15px; background:#ffd700;" onclick="completeEmotion()">감정 입력하기</button>
+        </div>
+        <button class="btn-p" style="position:absolute; top:15px; right:15px; background:#eee;" onclick="closeKitchen()">X</button>
     </div>
 </div>
 
@@ -65,62 +77,58 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let currentId = 1;
-    let s1="", s2="", selectedTags = [];
-    const emojis = ["😊","😆","🥰","😎","🥳","😌","☁️","🍵","🌱","🌊","💢","😡","😢","😫","🔥"];
-    const tags = ["#행복", "#뿌듯", "#안정", "#편안", "#피곤", "#짜증", "#위로", "#용기"];
+    let curId = 1, s1 = "", s2 = "", tags = [];
+    const emojiList = ["😊","😆","🥰","😎","🥳","😌","☁️","🍵","🌱","🌊","💢","😡","😢","😫","🔥","🌈","✨","💎","🧡","💥"];
+    const tagList = ["#설렘", "#행복", "#편안함", "#자신감", "#뿌듯함", "#속상함", "#짜증", "#위로필요"];
 
     function init() {
-        const grid = document.getElementById('emojiGrid');
-        emojis.forEach(e => {
+        const p = document.getElementById('emojiPallet');
+        emojiList.forEach(e => {
             const b = document.createElement('button'); b.className='emoji-btn'; b.innerText=e;
-            b.onclick=() => pick(e); grid.appendChild(b);
+            b.onclick=()=>pickEmoji(e); p.appendChild(b);
         });
-        const tl = document.getElementById('tagList');
-        tags.forEach(t => {
-            const b = document.createElement('button'); b.className='pixel-btn'; b.style.fontSize='12px'; b.innerText=t;
-            b.onclick=() => toggleTag(t, b); tl.appendChild(b);
+        const tb = document.getElementById('tagBox');
+        tagList.forEach(t => {
+            const b = document.createElement('button'); b.className='btn-p'; b.style.fontSize='12px'; b.innerText=t;
+            b.onclick=()=>toggleTag(t, b); tb.appendChild(b);
         });
     }
 
-    function switchStudent(id) {
-        currentId = id;
-        document.getElementById('dispName').innerText = id === 1 ? "1번 학생(남)" : "2번 학생(여)";
-        document.getElementById('charEmoji').innerText = id === 1 ? "🧍" : "🧍‍♀️";
+    function changeStudent(id) {
+        curId = id;
+        document.getElementById('stName').innerText = id === 1 ? "1번 홍길동" : "2번 김지수";
+        document.getElementById('stChar').innerText = id === 1 ? "🧍" : "🧍‍♀️";
     }
 
-    function pick(e) {
-        if(!s1) { s1=e; document.getElementById('s1').innerText=e; }
+    function openKitchen() { document.getElementById('kitchenModal').style.display='flex'; }
+    function closeKitchen() { document.getElementById('kitchenModal').style.display='none'; }
+
+    function pickEmoji(e) {
+        if(!s1) { s1=e; document.getElementById('slot1').innerText=e; }
         else { 
-            s2=e; document.getElementById('s2').innerText=e; 
-            document.getElementById('sResult').innerText = "✨";
-            document.getElementById('charEmoji').innerText = "🌈";
-            document.getElementById('tagArea').style.display='block';
-            updateBars(e);
+            s2=e; document.getElementById('slot2').innerText=e;
+            document.getElementById('resSlot').innerText = "🔮"; // 합성 결과 가상 처리
+            document.getElementById('metaInput').style.display='block';
         }
     }
 
     function toggleTag(t, b) {
-        if(selectedTags.includes(t)) { selectedTags = selectedTags.filter(i=>i!==t); b.style.background='white'; }
-        else if(selectedTags.length < 3) { selectedTags.push(t); b.style.background='#ffd700'; }
-        document.getElementById('dispTags').innerText = selectedTags.join(' ');
+        if(tags.includes(t)) { tags=tags.filter(i=>i!==t); b.style.background='#ffb6c1'; }
+        else if(tags.length<3) { tags.push(t); b.style.background='#ffd700'; }
     }
 
-    function updateBars(e) {
-        let en = 50, re = 50;
-        if(["😊","😆","🔥"].includes(e)) { en=90; re=30; }
-        if(["😌","🍵","🌱"].includes(e)) { en=30; re=90; }
-        document.getElementById('b-en').style.width = en + "%";
-        document.getElementById('b-re').style.width = re + "%";
-    }
-
-    function sendData() {
-        database.ref('room/student' + currentId).set({
-            name: currentId === 1 ? "홍길동" : "김지수", num: currentId,
-            emoji: document.getElementById('charEmoji').innerText,
-            diary: document.getElementById('diary').value,
-            tags: selectedTags.join(' '), status: "online"
-        }).then(() => { alert("감정 카드가 전송되었습니다!"); location.href="classroom.html"; });
+    function completeEmotion() {
+        const res = document.getElementById('resSlot').innerText;
+        document.getElementById('cardEmoji').innerText = res;
+        document.getElementById('cardTags').innerText = tags.join(' ');
+        document.getElementById('cardDiary').innerText = document.getElementById('diaryInput').value;
+        
+        // Firebase 전송
+        database.ref('room/student' + curId).set({
+            name: curId === 1 ? "홍길동" : "김지수", num: curId,
+            emoji: res, diary: document.getElementById('diaryInput').value,
+            tags: tags.join(' '), status: "online"
+        }).then(() => { alert("교실 전송 완료!"); closeKitchen(); });
     }
     init();
 </script>
