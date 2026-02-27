@@ -2,65 +2,102 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6-5 관리자실</title>
+    <title>6-5 관리자 센터</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <style>
-        /* 학생 교실과 동일한 스타일, 기능만 다름 */
-        .request-blink { border: 5px solid red !important; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        @font-face { font-family: 'DungGeunMo'; src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff') format('woff'); }
+        :root { --pm-dark: #1a0f0d; --pm-gold: #e6b31e; --pm-bg: #fdf5e6; }
+        body { margin: 0; background: #000; font-family: 'DungGeunMo', sans-serif; }
+        .admin-window { width: 1200px; height: 850px; margin: 20px auto; background: var(--pm-bg); border: 12px ridge var(--pm-dark); display: flex; flex-direction: column; }
+        .header { background: var(--pm-dark); color: var(--pm-gold); padding: 15px; text-align: center; font-size: 26px; border-bottom: 5px double var(--pm-gold); }
+        .layout { display: flex; flex: 1; overflow: hidden; }
+        .main-grid { flex: 1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; padding: 20px; background: #ead7b1; overflow-y: auto; }
+        .sidebar { width: 350px; background: #fff; border-left: 6px double var(--pm-dark); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .desk { background: #2d1b15; border: 3px solid #444; height: 160px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center; transition: 0.3s; }
+        .desk.online { background: #fff !important; color: #000 !important; border: 3px solid var(--pm-gold) !important; }
+        .desk.pending { border: 5px solid #ff5252 !important; animation: blink 1s infinite; cursor: pointer; z-index: 10; transform: scale(1.02); }
+        @keyframes blink { 50% { opacity: 0.7; border-color: transparent; } }
+        .avatar { width: 60px; height: 80px; object-fit: contain; }
+        .gem-mini { width: 18px; vertical-align: middle; }
+        .pm-btn { background: var(--pm-dark); color: var(--pm-gold); border: 4px outset var(--pm-gold); padding: 10px; cursor: pointer; font-family: inherit; width: 100%; }
+        input, select { padding: 8px; font-family: inherit; margin-bottom: 10px; border: 2px solid #ccc; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div class="pm-window">
-        <div class="pm-header">6-5 TEACHER CONTROL CENTER</div>
-        <div style="display:flex; flex:1;">
-            <div id="deskGrid" class="classroom-grid" style="flex:1;"></div>
-            <div class="side" style="width:250px; padding:20px; border-left:4px double #3e2723;">
-                <h3>📜 퀘스트 발급</h3>
-                <input type="text" id="qInput" style="width:100%" placeholder="미션 내용...">
-                <button class="pm-btn" onclick="issueQuest()">발급하기</button>
-                <hr>
-                <button class="pm-btn" onclick="openAllCards()">전체 감정카드 보기</button>
-            </div>
+<div class="admin-window">
+    <div class="header">🛡️ 6-5 인성 퀘스트 및 보석 관리</div>
+    <div class="layout">
+        <div class="main-grid" id="adminGrid"></div>
+        <div class="sidebar">
+            <h3 style="margin:0;">📜 퀘스트 발급</h3>
+            <input type="text" id="qTitle" placeholder="퀘스트 내용 입력">
+            <select id="qGemType">
+                <option value="respect">존중 (하늘색 보석)</option>
+                <option value="care">배려 (주황색 보석)</option>
+                <option value="love">사랑 (분홍색 보석)</option>
+            </select>
+            <input type="number" id="qAmount" value="1" min="1" max="5">
+            <button class="pm-btn" onclick="createQuest()">게시판 등록</button>
+            <hr style="width:100%;">
+            <h3>📋 시스템 로그</h3>
+            <div id="adminLog" style="flex:1; background:#f0f0f0; padding:10px; font-size:12px; overflow-y:auto; border:2px inset #fff;"></div>
         </div>
     </div>
+</div>
 
 <script>
-    const db = firebase.database();
-    let pw = prompt("관리자 암호", "");
-    if(pw !== "6500") { alert("접근 거부"); location.href="index.html"; }
+    const firebaseConfig = { apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8", authDomain: "secret-quest-class.firebaseapp.com", databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/", projectId: "secret-quest-class", storageBucket: "secret-quest-class.firebasestorage.app", messagingSenderId: "397245266210", appId: "1:397245266210:web:fde35d6a4dfd6ca7070d7b" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-    // 데스크 생성 및 실시간 감시
+    const grid = document.getElementById('adminGrid');
+    for(let i=1; i<=23; i++) {
+        let d = document.createElement('div'); d.className='desk'; d.id=`admin-desk-${i}`;
+        d.innerHTML = `No.${i}<br>입장 대기`; grid.appendChild(d);
+    }
+
     db.ref('room/').on('value', snap => {
-        const grid = document.getElementById('deskGrid'); grid.innerHTML = "";
-        snap.forEach(child => {
-            const s = child.val();
-            let d = document.createElement('div'); d.className='desk online';
-            if(s.requestDone) d.classList.add('request-blink');
-            d.innerHTML = `${s.num}번 ${s.name}<br>💎${s.gems||0}`;
-            d.onclick = () => handleApprove(s);
-            grid.appendChild(d);
+        snap.forEach(c => {
+            const s = c.val();
+            const desk = document.getElementById(`admin-desk-${s.num}`);
+            if(!desk) return;
+            desk.className = 'desk online' + (s.requestDone ? ' pending' : '');
+            desk.innerHTML = `
+                <div style="position:absolute; top:5px; left:5px; font-size:12px;">💎${(s.gems?.respect||0)+(s.gems?.care||0)+(s.gems?.love||0)}</div>
+                <img class="avatar" src="https://models.readyplayer.me/65829873d328479590892b1a.png?camera=fullbody&gender=${s.gender}&seed=${s.num}">
+                <div style="font-weight:bold; font-size:14px;">${s.num}번 ${s.tags ? '#'+s.tags[0] : ''}</div>
+                ${s.requestDone ? '<div style="background:red; color:white; font-size:11px; padding:2px;">승인대기</div>' : ''}
+            `;
+            desk.onclick = () => { if(s.requestDone) approveQuest(s); else alert(`[성찰]\n${s.diary}`); };
         });
     });
 
-    function handleApprove(s) {
-        if(s.requestDone) {
-            if(confirm(`[${s.requestDone.title}] 승인하고 보석을 주시겠습니까?`)) {
-                db.ref(`room/student${s.num}/quests/${s.requestDone.key}`).remove();
-                db.ref(`room/student${s.num}/requestDone`).remove();
-                db.ref(`room/student${s.num}/gems`).set((s.gems || 0) + 1);
-            }
-        } else {
-            alert(`[감정카드]\n성찰: ${s.diary}`);
-        }
+    function createQuest() {
+        const title = document.getElementById('qTitle').value;
+        const type = document.getElementById('qGemType').value;
+        const amount = parseInt(document.getElementById('qAmount').value);
+        if(!title) return;
+        db.ref('globalQuests').push({ title, rewardType: type, rewardAmount: amount, type: 'personality' });
+        document.getElementById('qTitle').value = "";
+        addLog(`📣 퀘스트 발동: ${title}`);
     }
 
-    function issueQuest() {
-        const title = document.getElementById('qInput').value;
-        db.ref('globalQuests').push({ title: title });
-        alert("교실 게시판에 퀘스트가 등록되었습니다.");
+    function approveQuest(student) {
+        const req = student.requestDone;
+        db.ref(`room/student${student.num}/myQuests/${req.key}`).once('value', qSnap => {
+            const q = qSnap.val();
+            if(confirm(`[${student.num}번] 승인하시겠습니까?\n내용: ${q.title}\n보상: ${q.rewardType} ${q.rewardAmount}개`)) {
+                let current = student.gems?.[q.rewardType] || 0;
+                db.ref(`room/student${student.num}/gems/${q.rewardType}`).set(current + q.rewardAmount);
+                db.ref(`room/student${student.num}/recentReward`).set({ type: q.rewardType, amount: q.rewardAmount, time: Date.now() });
+                db.ref(`room/student${student.num}/myQuests/${req.key}`).remove();
+                db.ref(`room/student${student.num}/requestDone`).remove();
+                addLog(`✅ ${student.num}번 승인완료`);
+            }
+        });
     }
+
+    function addLog(m) { const l=document.getElementById('adminLog'); l.innerHTML=`<div>> ${m}</div>`+l.innerHTML; }
 </script>
 </body>
 </html>
