@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6학년 5반 교실 현황</title>
+    <title>6학년 5반 관리자</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -10,13 +10,20 @@
 <body>
 
 <div class="game-window">
-    <div class="window-header"><span>🏫 6학년 5반 실시간 교실 현황</span></div>
+    <div class="window-header"><span>🏫 6학년 5반 실시간 감정 지도</span></div>
     <div class="classroom-grid" id="floor"></div>
-    <p style="text-align:center; font-size:12px; color:#666; margin-top:10px;">* 활성화된 책상을 클릭하면 학생의 감정 보고서를 확인합니다.</p>
+</div>
+
+<div id="popOverlay" class="modal-overlay">
+    <div class="custom-popup">
+        <h2 id="popTitle" style="margin-top:0; color:var(--gold);">학생 정보</h2>
+        <div id="popBody" style="line-height:1.6; font-size:18px;"></div>
+        <button class="pixel-btn" style="margin-top:20px; width:100%;" onclick="closePop()">확인 완료</button>
+    </div>
 </div>
 
 <script>
-    const firebaseConfig = {
+    const firebaseConfig = { /* 위와 동일한 설정 복사 */
         apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
         authDomain: "secret-quest-class.firebaseapp.com",
         databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/",
@@ -28,16 +35,13 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // 책상 23개 생성
-    const floor = document.getElementById('floor');
     for(let i=1; i<=23; i++) {
         const d = document.createElement('div');
         d.className = 'desk'; d.id = `desk-${i}`;
-        d.innerHTML = `<span>${i}번</span><span>빈자리</span>`;
-        floor.appendChild(d);
+        d.innerHTML = `<span>${i}번</span>`;
+        document.getElementById('floor').appendChild(d);
     }
 
-    // 실시간 데이터 감시
     database.ref('room/').on('value', (snap) => {
         const data = snap.val();
         if(!data) return;
@@ -47,12 +51,21 @@
             if(desk) {
                 desk.className = "desk online";
                 desk.innerHTML = `<span>${s.emoji}</span><span>${s.name}</span>`;
-                desk.onclick = () => {
-                    alert(`[${s.name} 감정 리포트]\n\n기록: ${s.diary}\n의욕: ${s.stats.en}%\n안정: ${s.stats.re}%\n감성: ${s.stats.se}%`);
-                };
+                desk.onclick = () => openPop(s);
             }
         }
     });
+
+    function openPop(s) {
+        document.getElementById('popOverlay').style.display = 'flex';
+        document.getElementById('popTitle').innerText = `${s.name}의 감정 보고서`;
+        document.getElementById('popBody').innerHTML = `
+            <div style="font-size:40px; margin-bottom:10px;">${s.emoji}</div>
+            <strong>이유:</strong> ${s.diary}<br>
+            <strong>선택 퀘스트:</strong> <span style="color:blue;">${s.quest}</span>
+        `;
+    }
+    function closePop() { document.getElementById('popOverlay').style.display = 'none'; }
 </script>
 </body>
 </html>
