@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6학년 5반 관리자</title>
+    <title>6-5 CLASSROOM</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -14,16 +14,18 @@
     <div class="classroom-grid" id="floor"></div>
 </div>
 
-<div id="popOverlay" class="modal-overlay">
-    <div class="custom-popup">
-        <h2 id="popTitle" style="margin-top:0; color:var(--gold);">학생 정보</h2>
-        <div id="popBody" style="line-height:1.6; font-size:18px;"></div>
-        <button class="pixel-btn" style="margin-top:20px; width:100%;" onclick="closePop()">확인 완료</button>
+<div id="modal" class="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 id="m-title" style="color:var(--gold);">학생 정보</h2>
+        <div id="m-emoji" style="font-size:80px; margin:20px 0;">?</div>
+        <div id="m-tags" style="color:blue; font-weight:bold; margin-bottom:10px;"></div>
+        <div id="m-diary" style="font-size:18px; line-height:1.5; background:#f9f9f9; padding:15px;"></div>
+        <button class="pixel-btn" style="width:100%; margin-top:20px;" onclick="closeModal()">닫기</button>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = { /* 위와 동일한 설정 복사 */
+    const firebaseConfig = { /* 위와 동일하게 입력 */
         apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
         authDomain: "secret-quest-class.firebaseapp.com",
         databaseURL: "https://secret-quest-class-default-rtdb.firebaseio.com/",
@@ -35,37 +37,33 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    const floor = document.getElementById('floor');
     for(let i=1; i<=23; i++) {
-        const d = document.createElement('div');
-        d.className = 'desk'; d.id = `desk-${i}`;
-        d.innerHTML = `<span>${i}번</span>`;
-        document.getElementById('floor').appendChild(d);
+        const d = document.createElement('div'); d.className='desk'; d.id=`desk-${i}`;
+        d.innerHTML = `<span>${i}번</span>`; floor.appendChild(d);
     }
 
     database.ref('room/').on('value', (snap) => {
-        const data = snap.val();
-        if(!data) return;
+        const data = snap.val(); if(!data) return;
         for(let key in data) {
             const s = data[key];
             const desk = document.getElementById(`desk-${s.num}`);
             if(desk) {
                 desk.className = "desk online";
                 desk.innerHTML = `<span>${s.emoji}</span><span>${s.name}</span>`;
-                desk.onclick = () => openPop(s);
+                desk.onclick = () => openModal(s);
             }
         }
     });
 
-    function openPop(s) {
-        document.getElementById('popOverlay').style.display = 'flex';
-        document.getElementById('popTitle').innerText = `${s.name}의 감정 보고서`;
-        document.getElementById('popBody').innerHTML = `
-            <div style="font-size:40px; margin-bottom:10px;">${s.emoji}</div>
-            <strong>이유:</strong> ${s.diary}<br>
-            <strong>선택 퀘스트:</strong> <span style="color:blue;">${s.quest}</span>
-        `;
+    function openModal(s) {
+        document.getElementById('modal').style.display='flex';
+        document.getElementById('m-title').innerText = `${s.num}번 ${s.name}의 카드`;
+        document.getElementById('m-emoji').innerText = s.emoji;
+        document.getElementById('m-tags').innerText = s.tags;
+        document.getElementById('m-diary').innerText = s.diary;
     }
-    function closePop() { document.getElementById('popOverlay').style.display = 'none'; }
+    function closeModal() { document.getElementById('modal').style.display='none'; }
 </script>
 </body>
 </html>
