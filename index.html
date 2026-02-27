@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>6학년 5반 감정 시뮬레이션</title>
+    <title>6학년 5반 감정 메이커</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -11,45 +11,57 @@
 
 <div class="game-window">
     <div class="window-header">
-        <span>EMOTION MAKER: 6-5 CLASS</span>
-        <span id="dateDisplay">2026.02.27</span>
+        <span>PRINCESS MAKER: EMOTION CLASS</span>
+        <div>
+            <button class="pixel-btn" onclick="switchStudent(1)" style="padding:2px 10px;">1번 남학생</button>
+            <button class="pixel-btn" onclick="switchStudent(2)" style="padding:2px 10px;">2번 여학생</button>
+        </div>
     </div>
 
     <div class="main-ui">
         <div class="left-panel">
+            <h2 id="studentName">1번 학생: 홍길동</h2>
             <div class="char-frame">
-                <img id="charAvatar" src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Standing.png" width="130">
+                <img id="charImg" src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Standing.png" class="char-img">
             </div>
             <div class="status-window">
-                <div class="stat-row">의욕(에너지) <div class="gauge-bg"><div id="bar-en" class="gauge-fill" style="background: #ff4757;"></div></div></div>
-                <div class="stat-row">안정(회복력) <div class="gauge-bg"><div id="bar-re" class="gauge-fill" style="background: #2ed573;"></div></div></div>
-                <div class="stat-row">감성(민감도) <div class="gauge-bg"><div id="bar-se" class="gauge-fill" style="background: #1e90ff;"></div></div></div>
+                <div class="stat-row">의욕 <div class="gauge-bg"><div id="bar-en" class="gauge-fill" style="background: #ff4757; width:20%;"></div></div></div>
+                <div class="stat-row">안정 <div class="gauge-bg"><div id="bar-re" class="gauge-fill" style="background: #2ed573; width:20%;"></div></div></div>
+                <div class="stat-row">민감 <div class="gauge-bg"><div id="bar-se" class="gauge-fill" style="background: #1e90ff; width:20%;"></div></div></div>
             </div>
         </div>
 
         <div class="right-panel">
-            <h3>[ 오늘 나의 마음 선택 ]</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="pixel-btn" onclick="analyze('happy')">🤩 행복/기쁨</button>
-                <button class="pixel-btn" onclick="analyze('calm')">😌 평온/차분</button>
-                <button class="pixel-btn" onclick="analyze('tired')">😴 피곤/무기력</button>
-                <button class="pixel-btn" onclick="analyze('angry')">💢 짜증/화남</button>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <button class="pixel-btn" onclick="selectMood('happy')">🤩 기쁨</button>
+                <button class="pixel-btn" onclick="selectMood('calm')">😌 평온</button>
+                <button class="pixel-btn" onclick="selectMood('sad')">😢 슬픔</button>
+                <button class="pixel-btn" onclick="selectMood('angry')">💢 화남</button>
             </div>
 
-            <div id="resultArea" style="display:none; margin-top:20px;">
-                <div class="mission-board">
-                    <strong>오늘의 감정 퀘스트:</strong><br>
-                    <span id="questText">아이콘을 선택하면 퀘스트가 생성됩니다.</span>
+            <div id="activityZone" style="display:none;">
+                <div class="kitchen-box">
+                    <span id="kitEmoji">?</span> + ✨ = <span id="kitResult">?</span>
+                    <div style="font-size:16px; color:#aaa; margin-top:5px;">감정 키워드: <span id="kitTag">분석중</span></div>
                 </div>
-                <textarea id="diary" style="width:100%; height:70px; margin-top:10px; font-family:inherit; padding:10px; box-sizing:border-box;" placeholder="이 마음이 드는 구체적인 이유는 무엇인가요?"></textarea>
-                <button class="pixel-btn" style="background: #ffeaa7; margin-top:10px;" onclick="sendToClass()">교실로 전송하고 입장하기</button>
+
+                <div style="margin-top:15px;">
+                    <strong>이 마음이 드는 구체적인 이유:</strong>
+                    <textarea id="diary" style="width:100%; height:60px; margin-top:5px; font-family:inherit; padding:10px;"></textarea>
+                </div>
+
+                <div style="margin-top:15px;">
+                    <strong>[하나의 퀘스트를 선택하세요]</strong>
+                    <div id="questList"></div>
+                </div>
+
+                <button class="pixel-btn" style="background:var(--accent); margin-top:20px;" onclick="uploadData()">오늘의 감정 전송하기</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Firebase 설정
     const firebaseConfig = {
         apiKey: "AIzaSyDw773x1yot2uncAMl_gTQ6z6Njhgh1Od8",
         authDomain: "secret-quest-class.firebaseapp.com",
@@ -62,49 +74,73 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    let currentStats = { en: 20, re: 20, se: 20 };
-    let selectedEmoji = "✨";
+    let currentId = 1;
+    let selectedQuest = "";
+    let finalEmoji = "";
 
-    function analyze(type) {
-        document.getElementById('resultArea').style.display = 'block';
-        const q = document.getElementById('questText');
+    const assets = {
+        1: { name: "홍길동(남)", base: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Standing.png",
+             happy: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Dancing.png",
+             sad: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Facepalming.png",
+             angry: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Man%20Pouting.png" },
+        2: { name: "김지수(여)", base: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Woman%20Standing.png",
+             happy: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Woman%20Dancing.png",
+             sad: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Woman%20Facepalming.png",
+             angry: "https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Woman%20Pouting.png" }
+    };
+
+    function switchStudent(id) {
+        currentId = id;
+        document.getElementById('studentName').innerText = assets[id].name;
+        document.getElementById('charImg').src = assets[id].base;
+    }
+
+    function selectMood(mood) {
+        document.getElementById('activityZone').style.display = 'block';
+        const img = document.getElementById('charImg');
+        const qList = document.getElementById('questList');
+        qList.innerHTML = "";
         
-        if(type === 'happy') {
-            currentStats = { en: 90, re: 60, se: 30 };
-            selectedEmoji = "🤩";
-            q.innerText = "친구에게 기분 좋은 칭찬 한 마디 건네기!";
-        } else if(type === 'calm') {
-            currentStats = { en: 40, re: 95, se: 20 };
-            selectedEmoji = "😌";
-            q.innerText = "오늘 공부할 내용을 차분히 1분간 훑어보기";
-        } else if(type === 'tired') {
-            currentStats = { en: 10, re: 30, se: 60 };
-            selectedEmoji = "😴";
-            q.innerText = "자리에서 일어나 가벼운 스트레칭 3회 하기";
-        } else if(type === 'angry') {
-            currentStats = { en: 80, re: 10, se: 90 };
-            selectedEmoji = "💢";
-            q.innerText = "심호흡을 크게 3번 하고 시원한 물 한 잔 마시기";
+        let quests = [];
+        if(mood === 'happy') {
+            img.src = assets[currentId].happy;
+            document.getElementById('kitEmoji').innerText = "🤩";
+            document.getElementById('kitResult').innerText = "🌈";
+            document.getElementById('kitTag').innerText = "#뿌듯함 #설렘";
+            quests = ["친구에게 칭찬 한마디", "오늘의 행운 나누기", "감사 일기 쓰기"];
+        } else if(mood === 'sad') {
+            img.src = assets[currentId].sad;
+            document.getElementById('kitEmoji').innerText = "😢";
+            document.getElementById('kitResult').innerText = "☔";
+            document.getElementById('kitTag').innerText = "#위로필요 #속상함";
+            quests = ["나를 위한 셀프허그", "슬픈 마음 종이에 쓰기", "좋아하는 노래 듣기"];
+        } else {
+             img.src = assets[currentId].angry;
+             document.getElementById('kitEmoji').innerText = "💢";
+             document.getElementById('kitResult').innerText = "🔥";
+             document.getElementById('kitTag').innerText = "#화남 #억울함";
+             quests = ["심호흡 10번 하기", "찬물 한 잔 마시기", "숫자 거꾸로 세기"];
         }
 
-        updateBars();
-    }
-
-    function updateBars() {
-        document.getElementById('bar-en').style.width = currentStats.en + "%";
-        document.getElementById('bar-re').style.width = currentStats.re + "%";
-        document.getElementById('bar-se').style.width = currentStats.se + "%";
-    }
-
-    function sendToClass() {
-        const diary = document.getElementById('diary').value;
-        database.ref('room/student1').set({
-            name: "1번 학생", num: 1, emoji: selectedEmoji, 
-            stats: currentStats, diary: diary, status: "online"
-        }).then(() => {
-            alert("교실로 데이터가 전송되었습니다!");
-            location.href = "classroom.html";
+        quests.forEach(q => {
+            const div = document.createElement('div');
+            div.className = 'quest-item';
+            div.innerText = q;
+            div.onclick = function() {
+                Array.from(qList.children).forEach(c => c.classList.remove('active'));
+                div.classList.add('active');
+                selectedQuest = q;
+            };
+            qList.appendChild(div);
         });
+    }
+
+    function uploadData() {
+        if(!selectedQuest) return alert("퀘스트를 하나 선택해주세요!");
+        database.ref('room/student' + currentId).set({
+            name: assets[currentId].name, num: currentId, emoji: document.getElementById('kitResult').innerText,
+            diary: document.getElementById('diary').value, quest: selectedQuest, status: "online"
+        }).then(() => { alert("교실로 전송 성공!"); location.href = "classroom.html"; });
     }
 </script>
 </body>
